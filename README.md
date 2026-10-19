@@ -32,6 +32,10 @@ Revenge/
   tools/                build + leak-check scripts (strip metadata, scan for external requests)
 ```
 
+## Deploying to GitHub Pages
+
+`.github/workflows/pages.yml` publishes `site/` on every push to `main`. One-time setup: repo **Settings -> Pages -> Source: GitHub Actions**. Pages ignores `site/_headers`; the CSP in each page's `<meta>` tag still applies.
+
 ## Ground rules
 
 1. Static files only. No backend, accounts, database, or logs.
