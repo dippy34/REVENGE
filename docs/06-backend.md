@@ -69,9 +69,19 @@ DOMAIN=631cb8a9.157-180-67-116.sslip.io ACCESS_KEY=... bash /opt/revenge/server/
 ```
 
 Re-run the same command to update to the latest `main`. Since 2026-10-19 this is
-how the Hetzner server `ubuntu-2gb-hel1-2` runs the site: next to the older
-nova-hub services, at `https://631cb8a9.157-180-67-116.sslip.io` (the hostname uses the
-title digest, so the name is not in the URL).
+how the Hetzner server `ubuntu-2gb-hel1-2` (157.180.67.116) runs the site, next to the older
+nova-hub services. The hostnames use the title digest, so the name is not in the URL.
+
+**Live addresses:**
+- `https://631cb8a9.com` and `https://www.631cb8a9.com`: the domain, registered at IONOS
+  with private registration on. DNS at IONOS has `A @` and `A www` set to `157.180.67.116`
+  with TTL 5 min, and no `AAAA` records.
+- `https://631cb8a9.157-180-67-116.sslip.io`: a backup that needs no DNS.
+
+The current update command (no access key; saved settings are kept):
+```sh
+DOMAIN='631cb8a9.com, www.631cb8a9.com, 631cb8a9.157-180-67-116.sslip.io' bash /opt/revenge/server/setup-native.sh
+```
 
 ## Local development
 

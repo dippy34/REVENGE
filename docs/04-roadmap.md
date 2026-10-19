@@ -61,7 +61,7 @@
 - [x] Scramjet + Wisp on our own server (`server/`), with pinned versions. Details and test results are in `06-backend.md`.
 - [x] Browser shell at `/proxy/`: address bar (search or URL), back/forward/reload, new page, fullscreen, quick links, access-key prompt.
 - [x] No logging; private/loopback addresses blocked; web ports only; optional access key.
-- [x] Live on the Hetzner server at `https://631cb8a9.157-180-67-116.sslip.io` (2026-10-19). Real sites tested through it: example.com, Wikipedia, a DuckDuckGo search.
+- [x] Live on the Hetzner server at `https://631cb8a9.com` (2026-10-19; also `www.` and an sslip.io backup). Real sites tested through it: example.com, Wikipedia, a DuckDuckGo search.
 
 ## Phase 6 - Deploy
 - Edge/static host, random hostname, wildcard cert, logs off.

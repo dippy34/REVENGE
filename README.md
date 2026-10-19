@@ -36,7 +36,7 @@ Revenge/
 
 ## Deploying to GitHub Pages
 
-The main deploy is the Hetzner server: see `docs/06-backend.md`. GitHub Pages is a mirror without the proxy. `.github/workflows/pages.yml` publishes `site/` on every push to `main`. One-time setup: repo **Settings -> Pages -> Source: GitHub Actions**. Pages ignores `site/_headers`; the CSP in each page's `<meta>` tag still applies.
+The main deploy is the Hetzner server, live at https://631cb8a9.com: see `docs/06-backend.md`. GitHub Pages is a mirror without the proxy. `.github/workflows/pages.yml` publishes `site/` on every push to `main`. One-time setup: repo **Settings -> Pages -> Source: GitHub Actions**. Pages ignores `site/_headers`; the CSP in each page's `<meta>` tag still applies.
 
 ## Ground rules
 
