@@ -7,7 +7,7 @@
   "main": "server.mjs",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check headers.mjs && node --check jsgh.mjs && node --check tube.mjs && node --test jsgh.test.mjs tube.test.mjs"
+    "check": "node --check server.mjs && node --check headers.mjs && node --check jsgh.mjs && node --check tube.mjs && node --check semag.mjs && node --check stats.mjs && node --check rhproxy.mjs && node --check rammerhead.cjs && node --test jsgh.test.mjs tube.test.mjs rhproxy.test.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -19,6 +19,7 @@
     "@mercuryworkshop/scramjet-controller": "0.0.14",
     "@mercuryworkshop/scramjet-utils": "0.0.3",
     "@mercuryworkshop/wisp-js": "0.4.1",
-    "@ruffle-rs/ruffle": "0.7.1"
+    "@ruffle-rs/ruffle": "0.7.1",
+    "rammerhead": "1.2.64"
   }
 }

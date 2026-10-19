@@ -36,6 +36,18 @@
 .p-ic:disabled { color: var(--mute); background: none; cursor: default; }
 .p-ic svg { width: 18px; height: 18px; }
 
+.p-pill {
+  padding: 6px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--dim);
+  background: #0e0e0e;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+.p-pill:hover { color: var(--hi); border-color: var(--hi); }
+
 .p-bar {
   display: flex;
   align-items: center;

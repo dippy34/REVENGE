@@ -4,6 +4,8 @@
 //                  (exact versions from package.json, never fetched at runtime)
 //   /proxy/sw.js   the service worker that routes proxied requests
 //   /proxy/wisp/   Wisp over WebSocket: the only part that reaches the web
+//   /<session>/... the Safari / iPad engine (Rammerhead), forwarded to rammerhead.cjs
+//                  together with its helper scripts; see rhproxy.mjs
 //   /semag/*       the R2 games, relayed and cached on disk (see semag.mjs)
 //   /jsgh/*        gn-math game files (jsDelivr / GitHub), relayed and cached
 //   /vendor/ruffle Ruffle (Flash emulator), from its pinned npm package
@@ -16,6 +18,9 @@
 // Env:
 //   PORT (8080)  HOST (127.0.0.1)  SITE_DIR (../site)
 //   ACCESS_KEY   if set, the proxy only accepts connections that present it
+//   RH_SOCKET    unix socket of the Rammerhead process (default /run/revenge/rh.sock);
+//                or RH_PORT for a loopback TCP port. If nothing listens there,
+//                the Safari engine answers 502 and the rest of the site works.
 //   R2_BASE      public address of the games bucket (default: the owner's)
 //   CACHE_DIR    where relayed game files are kept (default ./.cache)
 //   CACHE_MAX_MB size cap for that cache (default 4096)
@@ -34,6 +39,7 @@ import { createSemag } from './semag.mjs';
 import { createJsgh } from './jsgh.mjs';
 import { createTube } from './tube.mjs';
 import { createStats } from './stats.mjs';
+import { createRh, isRhRequest } from './rhproxy.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -43,6 +49,8 @@ const SITE = path.resolve(process.env.SITE_DIR || path.join(here, '..', 'site'))
 const KEY = process.env.ACCESS_KEY || '';
 const R2_BASE = process.env.R2_BASE || 'https://pub-31ddb721e92142be8b2deee228c36013.r2.dev';
 const CACHE_DIR = path.resolve(process.env.CACHE_DIR || path.join(here, '.cache'));
+const RH_SOCKET = process.env.RH_PORT ? '' : (process.env.RH_SOCKET || '/run/revenge/rh.sock');
+const rh = createRh(RH_SOCKET ? { socketPath: RH_SOCKET } : { port: Number(process.env.RH_PORT) });
 const CACHE_MAX = Math.max(64, Number(process.env.CACHE_MAX_MB || 4096)) * 1024 * 1024;
 
 const stats = createStats({
@@ -170,6 +178,7 @@ function resolveSite(urlPath) {
 const server = http.createServer((req, res) => {
   const urlPath = new URL(req.url, 'http://x').pathname;
   if (req.method === 'POST' && urlPath === '/api/p') return stats.hit(req, res);
+  if (isRhRequest(req.method, req.url)) return rh.handle(req, res);
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return send(res, 405, { allow: 'GET, HEAD' }, '');
   }
@@ -195,7 +204,7 @@ const server = http.createServer((req, res) => {
     return send(res, 200, {
       'content-type': 'application/json',
       'cache-control': 'no-store'
-    }, JSON.stringify({ key: !!KEY, semag: true, jsgh: true }));
+    }, JSON.stringify({ key: !!KEY, semag: true, jsgh: true, rammerhead: true }));
   }
   if (urlPath.startsWith('/semag/')) return semag.handle(req, res);
   if (urlPath.startsWith('/jsgh/')) return jsgh.handle(req, res);
@@ -222,6 +231,7 @@ const server = http.createServer((req, res) => {
 
 // /proxy/wisp/ or /proxy/wisp/<key>/
 server.on('upgrade', (req, socket, head) => {
+  if (isRhRequest('GET', req.url)) return rh.upgrade(req, socket, head);
   const m = /^\/proxy\/wisp\/(?:([^/?#]+)\/)?$/.exec(new URL(req.url, 'http://x').pathname);
   if (!m || !keyOk(m[1] && decodeURIComponent(m[1]))) {
     socket.end('HTTP/1.1 403 Forbidden\r\nconnection: close\r\n\r\n');

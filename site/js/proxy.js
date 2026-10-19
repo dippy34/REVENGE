@@ -1,8 +1,16 @@
-/* proxy.js: the browser shell around Scramjet. The page registers the
-   service worker, loads Scramjet and the libcurl transport from /proxy/sj/,
-   and opens sites in an iframe. All traffic leaves through /proxy/wisp/
-   on this same server. Works only on the server in server/, not on a
-   static host. */
+/* proxy.js: the browser shell around the proxy. Two engines sit behind the
+   same address bar, back / forward / reload and quick links:
+
+   scramjet   rewrites pages in the browser with a service worker. Fast and
+              the best on Chrome and Firefox, but it leans on features Safari
+              does not fully have.
+   rammerhead rewrites pages on the server, so the browser only gets ordinary
+              pages. Used on Safari and on every iPhone / iPad browser (they
+              all run Safari's engine).
+
+   The engine is chosen from the browser; the pill in the top bar (or
+   ?engine=scramjet / ?engine=rammerhead) overrides it and is remembered.
+   Works only on the server in server/, not on a static host. */
 (function () {
   'use strict';
 
@@ -88,6 +96,113 @@
     });
   }
 
+  /* ---------- which engine ---------- */
+
+  // Safari, and anything on an iPhone / iPad (Apple makes every browser there
+  // use Safari's engine; iPadOS even reports itself as a Mac, hence the touch test).
+  function isWebKit() {
+    var ua = navigator.userAgent || '';
+    var ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var safari = /Safari/.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|Edg|OPR|Android/.test(ua);
+    return ios || safari;
+  }
+
+  var forced = new URLSearchParams(location.search).get('engine');
+  if (forced === 'scramjet' || forced === 'rammerhead') store('p-engine', forced);
+  var saved = store('p-engine');
+  var auto = isWebKit() ? 'rammerhead' : 'scramjet';
+  var which = saved === 'scramjet' || saved === 'rammerhead' ? saved : auto;
+  var enginePill = document.getElementById('p-engine');
+  if (enginePill) {
+    enginePill.textContent = which === 'rammerhead' ? 'safari mode' : 'standard mode';
+    enginePill.title = (which === 'rammerhead' ? 'Rammerhead engine' : 'Scramjet engine') +
+      (which === auto ? ' (picked for your browser). ' : ' (set by you). ') + 'Click to switch.';
+    enginePill.addEventListener('click', function () {
+      store('p-engine', which === 'rammerhead' ? 'scramjet' : 'rammerhead');
+      location.replace(location.pathname);
+    });
+  }
+
+  /* ---------- the two engines ---------- */
+
+  var scramjetEngine = {
+    check: tryKey,
+    connect: function (key) { return boot(key); },
+    open: function (url) { try { frame.go(url); } catch (e) { toast('could not open that address'); } },
+    back: function () { if (frame) frame.back(); },
+    forward: function () { if (frame) frame.forward(); },
+    reload: function () { if (frame) frame.reload(); },
+    ready: function () { return !!frame; }
+  };
+
+  var rhId = '';
+  var rhKey = '';
+  var rhTimer = 0;
+
+  // A session id is 32 letters and digits. Rammerhead keeps the cookies of the
+  // sites you visit under it, in memory on the server, for 30 minutes idle.
+  function rhCreate() {
+    return fetch('/newsession' + (rhKey ? '?pwd=' + encodeURIComponent(rhKey) : ''), { cache: 'no-store' }).then(function (r) {
+      if (r.status === 403) throw new Error('key');
+      if (r.status === 429) throw new Error('too many sessions, try again in a few minutes');
+      if (!r.ok) throw new Error('the safari engine is not answering (' + r.status + ')');
+      return r.text();
+    }).then(function (t) {
+      t = t.trim();
+      if (!/^[a-z0-9]{32}$/i.test(t)) throw new Error('unexpected answer from the safari engine');
+      // keep addresses readable (Rammerhead scrambles them by default)
+      return fetch('/editsession?id=' + t + '&enableShuffling=0' + (rhKey ? '&pwd=' + encodeURIComponent(rhKey) : ''), { cache: 'no-store' })
+        .then(function () { rhId = t; store('rh-id', t); return t; });
+    });
+  }
+
+  function rhSession() {
+    var id = rhId || store('rh-id');
+    if (!id || !/^[a-z0-9]{32}$/i.test(id)) return rhCreate();
+    return fetch('/sessionexists?id=' + id, { cache: 'no-store' })
+      .then(function (r) { return r.text(); })
+      .then(function (t) { if (t === 'exists') { rhId = id; return id; } return rhCreate(); }, rhCreate);
+  }
+
+  // what the proxied page's address really is: /<session>/<address>
+  function rhCurrent() {
+    try {
+      var l = iframe.contentWindow.location;
+      var m = /^\/[a-z0-9]{32}\/(.+)$/i.exec(l.pathname + l.search + l.hash);
+      return m ? m[1] : '';
+    } catch (e) { return ''; }
+  }
+
+  var rhEngine = {
+    check: function (key) {
+      rhKey = key;
+      return rhCreate().then(function () { return true; }, function (e) {
+        if (e.message === 'key') return false;
+        throw e;
+      });
+    },
+    connect: function (key) {
+      rhKey = key;
+      return rhSession().then(function () {
+        clearInterval(rhTimer);
+        rhTimer = setInterval(function () {
+          if (iframe.hidden) return;
+          var cur = rhCurrent();
+          if (cur && document.activeElement !== input && input.value !== cur) input.value = cur;
+        }, 600);
+      });
+    },
+    open: function (url) {
+      rhSession().then(function (id) { iframe.src = '/' + id + '/' + url; }, function (e) { toast(e.message || 'could not open that address'); });
+    },
+    back: function () { try { iframe.contentWindow.history.back(); } catch (e) { /* cross-origin or gone */ } },
+    forward: function () { try { iframe.contentWindow.history.forward(); } catch (e) { /* cross-origin or gone */ } },
+    reload: function () { try { iframe.contentWindow.location.reload(); } catch (e) { /* cross-origin or gone */ } },
+    ready: function () { return !!rhId; }
+  };
+
+  var engine = which === 'rammerhead' ? rhEngine : scramjetEngine;
+
   function registerSw() {
     return navigator.serviceWorker.register('/proxy/sw.js', { scope: '/proxy/', updateViaCache: 'none' })
       .then(function (reg) {
@@ -150,17 +265,17 @@
     if (!url) return;
     input.value = url;
     input.blur();
-    if (!frame) { pending = url; return; }
+    if (!engine.ready()) { pending = url; return; }
     start.hidden = true;
     iframe.hidden = false;
     root.classList.add('browsing');
     back.disabled = fwd.disabled = reload.disabled = false;
-    try { frame.go(url); } catch (e) { toast('could not open that address'); }
+    engine.open(url);
   }
 
   function connect(key) {
     say('connecting');
-    return boot(key).then(function () {
+    return engine.connect(key).then(function () {
       say('search, or type a web address above.');
       quick.hidden = false;
       if (pending) { var p = pending; pending = null; open(p); }
@@ -186,8 +301,8 @@
       quick.appendChild(b);
     });
 
-    if (!('serviceWorker' in navigator) || !window.isSecureContext) {
-      say('this browser cannot run the proxy here (it needs https).', true);
+    if (engine === scramjetEngine && (!('serviceWorker' in navigator) || !window.isSecureContext)) {
+      say('this browser cannot run the standard mode here. try safari mode (top right).', true);
       return;
     }
 
@@ -199,7 +314,7 @@
       if (!cfg.key) return connect('');
       var saved = store('p-key');
       if (!saved) return askKey(false);
-      return tryKey(saved).then(function (ok) {
+      return engine.check(saved).then(function (ok) {
         if (ok) return connect(saved);
         store('p-key', null);
         askKey(true);
@@ -214,19 +329,19 @@
     var k = keyIn.value.trim();
     if (!k) return;
     say('checking');
-    tryKey(k).then(function (ok) {
+    engine.check(k).then(function (ok) {
       if (!ok) return askKey(true);
       store('p-key', k);
       keyForm.hidden = true;
       connect(k);
-    });
+    }, function (e) { say(e.message || 'could not check the key', true); });
   });
 
   form.addEventListener('submit', function (e) { e.preventDefault(); open(input.value); });
   input.addEventListener('focus', function () { input.select(); });
-  back.addEventListener('click', function () { if (frame) frame.back(); });
-  fwd.addEventListener('click', function () { if (frame) frame.forward(); });
-  reload.addEventListener('click', function () { if (frame) frame.reload(); });
+  back.addEventListener('click', function () { engine.back(); });
+  fwd.addEventListener('click', function () { engine.forward(); });
+  reload.addEventListener('click', function () { engine.reload(); });
   document.getElementById('p-home').addEventListener('click', showStart);
   document.getElementById('p-full').addEventListener('click', function () {
     var el = iframe.hidden ? root : iframe;

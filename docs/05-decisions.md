@@ -135,3 +135,9 @@
   - **Not recorded:** what is opened through the proxy, YouTube searches, video or channel ids (only the YouTube section: home, shorts...). Bots are skipped by user agent.
   - **Viewing:** the private, unlinked page `/stats/` with a `STATS_KEY`.
 - **Cursor glow removed:** the white spotlight that followed the mouse (`.fx-spot`) is gone from every page. The dot-and-ring cursor stays.
+
+### Two proxy engines (2026-10-19)
+- **Why:** the owner's school iPad, and Safari on a Mac, did not run the Scramjet proxy (logos missing, odd behaviour) while Chrome did. Scramjet is alpha, its own test suite runs Chromium only, and it has a reported iPad Safari bug (service-worker stream transfer). Ultraviolet was ruled out: same design and deprecated since October 2024.
+- **What:** keep Scramjet for Chrome, Edge and Firefox, and use Rammerhead (server-side rewriting) for Safari and every iPhone / iPad browser, picked automatically with a manual switch. The owner confirmed Rammerhead works in Safari on a Mac before this was built.
+- **Cost:** a second service on the server (up to 600 MB) and a network lock, because Rammerhead cannot be trusted to refuse private addresses. Details and limits in `06-backend.md`.
+- **Not done:** the Docker setup does not include it.

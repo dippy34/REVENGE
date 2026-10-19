@@ -1,6 +1,6 @@
 # Project: Revenge (working title)
 
-A private site with no third-party tracking (only its own anonymous visit counter, see `docs/06-backend.md`): **YouTube**, **Games** and a **Proxy** (Scramjet, on our own Hetzner server).
+A private site with no third-party tracking (only its own anonymous visit counter, see `docs/06-backend.md`): **YouTube**, **Games** and a **Proxy** (Scramjet for Chrome, Rammerhead for Safari and iPad, on our own Hetzner server).
 Black-and-white, high-effects, "anonymous" feel. Shared by word of mouth and direct URL only.
 
 > Status: **Phases 1-2 built** (menu, theme, effects, YouTube feed) plus **Games** and the **Proxy** (`server/`, see `docs/06-backend.md`). The settings panel and Proxy are next. Build order is in `docs/04-roadmap.md`.
@@ -14,7 +14,7 @@ Black-and-white, high-effects, "anonymous" feel. Shared by word of mouth and dir
 | [docs/03-privacy-and-discovery.md](docs/03-privacy-and-discovery.md) | No-tracking architecture, unlisted/no-index setup, builder hygiene, cloak tools |
 | [docs/04-roadmap.md](docs/04-roadmap.md) | Phases and build order, definition of done per phase |
 | [docs/05-decisions.md](docs/05-decisions.md) | Decisions made, open questions, things we will not build |
-| [docs/06-backend.md](docs/06-backend.md) | The Hetzner server, the proxy, safety settings, how to deploy |
+| [docs/06-backend.md](docs/06-backend.md) | The Hetzner server, the two proxy engines, safety settings, how to deploy |
 
 ## Code layout
 

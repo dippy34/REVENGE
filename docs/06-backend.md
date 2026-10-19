@@ -22,6 +22,69 @@ browser ──https──> Caddy (TLS) ──> server.mjs ──> site/ (static,
   Upstream's `proxy-bootstrap` package is not used, because it downloads
   "latest" from npm every time it starts.
 
+## The two proxy engines (Chrome vs Safari / iPad)
+
+The proxy page (`/proxy/`) has two engines behind one address bar and picks one from
+the browser. The pill in the top bar ("standard mode" / "safari mode"), or
+`?engine=scramjet` / `?engine=rammerhead`, overrides the choice and is remembered.
+
+| | Standard mode: **Scramjet** | Safari mode: **Rammerhead** |
+|---|---|---|
+| Picked for | Chrome, Edge, Firefox on a computer | Safari, and every browser on an iPhone or iPad |
+| Where pages are rewritten | in the browser, by a service worker | on the server |
+| Why this split | fast, and handles heavy sites best | the browser needs none of the features Safari lacks (Scramjet has a reported iPad Safari bug and its tests only run Chrome) |
+
+**Detection** (`site/js/proxy.js`): Safari is `Safari` without `Chrome`/`Chromium`/`CriOS`/
+`FxiOS`/`Edg`/`OPR`/`Android` in the user agent, and iOS / iPadOS is detected too (iPadOS
+reports itself as a Mac, so a touch screen on a "Mac" counts). Every iPhone / iPad browser
+uses Safari's engine, so Chrome or Firefox on an iPad also gets Safari mode.
+
+**How Safari mode runs:**
+- `server/rammerhead.cjs` is Rammerhead 1.2.64 (MIT; testcafe-hammerhead 31.6.2 inside),
+  started by its own systemd service `revenge-rh` on a unix socket (`/run/revenge/rh.sock`).
+  `server/rhproxy.mjs` forwards only the paths Rammerhead owns (its helper scripts, plus
+  `/<32 characters>/<address>` for proxied pages and their WebSockets) to that socket.
+- A visit creates a session (`/newsession`) and loads `/<session>/<address>` in the same
+  iframe the other engine uses. The address bar, back, forward and reload work the same.
+  URL scrambling is switched off so addresses stay readable.
+- Sessions are **in memory only** (30 minutes idle, 4 hours at most). Cookies and
+  localStorage of the sites a visitor opens are never written to disk.
+- **No logs.** Rammerhead's own `logLevel: 'disabled'` is broken in this version (it logs
+  everything, because the check is `0 <= level`), so the logger's output function is
+  replaced, and `rhproxy.test.mjs` checks that the process writes nothing.
+- **Visitor's address kept from the sites they open:** `X-Forwarded-For`, `Via`, `Forwarded`,
+  `X-Real-IP`, Cloudflare headers and the internal `x-rh-*` headers are removed before the
+  request goes on, by `rhproxy.mjs` and again by Rammerhead's `stripClientHeaders`.
+- **Refused routes:** `/deletesession`, and `/editsession` except to turn URL scrambling off
+  (it could route a session through another proxy). One visitor can make 30 sessions an hour.
+
+**The network lock (important).** Rammerhead has no filter of its own, so on its own it
+would let anyone read this server's private services (Caddy's admin port, the app, the
+cloud provider's private network) by "browsing" to them. `setup-native.sh` runs it with
+`IPAddressDeny=` for loopback, private ranges, link-local, and this machine's own
+addresses, enforced by the kernel, with only the DNS resolvers allowed. After every
+install the script tries to reach the app through Rammerhead on 127.0.0.1,
+`[::ffff:127.0.0.1]`, localhost, `[::1]` and the metadata address, and **stops the service
+and fails** if any of them answer. Your current proxy (Scramjet over Wisp) has its own
+equivalent block (`allow_private_ips: false`).
+
+**Limits:**
+- **Single port.** Rammerhead normally wants a second public port for "cross-domain"
+  requests. School networks often block odd ports, so it runs in its one-port mode, which
+  the Rammerhead docs warn can break sites that check the `Origin` header.
+- **Same origin.** Like Scramjet, proxied pages run on this site's origin (hammerhead wraps
+  `localStorage`, but it is not a hard wall). Do not treat the stats key as safe from a
+  hostile page opened through the proxy.
+- **Sync error.** The browser console shows `n.addChangeEventListener is not a function`
+  from Rammerhead's optional localStorage sync; pages work, but a site's localStorage is
+  not synced to the server (it stays in the visitor's browser).
+- **Old and community-run.** Rammerhead's last release was October 2023.
+- **Docker.** The compose file does not start the Safari engine (the network lock needs
+  systemd); the proxy page will say it is not running. Use `setup-native.sh`.
+- **Not tested here:** Safari itself. Everything was tested in Chromium with a Safari user
+  agent (engine choice, sessions, navigation, Wikipedia, DuckDuckGo, Bing, YouTube).
+  Whether Safari on an iPad renders and navigates correctly has to be checked on the device.
+
 ## The R2 games (`/semag/`)
 
 About 425 more games live in a Cloudflare R2 bucket (`semag/<game>/index.html` plus
@@ -171,6 +234,7 @@ Caddy as a system service. It leaves everything else alone:
 - One site block for `$DOMAIN` is appended to `/etc/caddy/Caddyfile`. The file is
   backed up first, checked with `caddy validate`, and restored if the check fails.
 - The games cache lives in `/var/cache/revenge`, and the visit counts in `/var/lib/revenge` (both made by systemd, owned by `revenge`).
+- The Safari engine is a second service, `revenge-rh` (unit written by the same script, with the kernel IP filter above). It gets its own env file, `/etc/revenge-rh.env`, with only the proxy key.
 - The access key lives in `/etc/revenge.env` (root only). Pass `ACCESS_KEY=` (empty) to turn the lock off, or a value to change it. Leave it out to keep the saved one.
 - Changing `DOMAIN` (it can list several names, comma-separated) renames the existing site block instead of adding a second one.
 

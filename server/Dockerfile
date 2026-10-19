@@ -5,7 +5,8 @@ FROM mirror.gcr.io/library/node:22-alpine
 WORKDIR /app/server
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
-COPY server/server.mjs server/headers.mjs server/semag.mjs server/jsgh.mjs server/tube.mjs server/stats.mjs ./
+# the Safari engine (rammerhead.cjs) is not started in Docker: see docs/06-backend.md
+COPY server/*.mjs server/rammerhead.cjs ./
 COPY site /app/site
 
 RUN mkdir /cache /data && chown node:node /cache /data
