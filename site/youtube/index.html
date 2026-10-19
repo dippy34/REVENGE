@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-page="yt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src https://nova-hub.dev; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'">
+<meta name="color-scheme" content="dark">
+<title>~/v</title>
+<link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/fx.css">
+<link rel="stylesheet" href="../css/yt.css">
+<script src="../js/early.js"></script>
+<script src="../js/fx.js" defer></script>
+<script src="../js/yt-api.js" defer></script>
+<script src="../js/yt-profile.js" defer></script>
+<script src="../js/yt-app.js" defer></script>
+</head>
+<body>
+<div class="fx fx-spot" aria-hidden="true"></div>
+
+<header class="yt-top">
+  <a class="yt-logo" href="../" aria-label="back to menu">
+    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+  </a>
+  <nav class="yt-nav" aria-label="youtube">
+    <a href="#/home" data-nav="home">home</a>
+    <a href="#/shorts" data-nav="shorts">shorts</a>
+    <a href="#/subs" data-nav="subs">subscriptions</a>
+    <a href="#/library" data-nav="library">library</a>
+  </nav>
+  <form class="yt-search" id="yt-search" role="search" autocomplete="off">
+    <label class="sr" for="yt-q">search youtube or paste a link</label>
+    <input id="yt-q" type="search" maxlength="300" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="search" placeholder="search or paste a link">
+    <button type="submit" aria-label="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+    </button>
+  </form>
+</header>
+
+<main class="yt-view" id="view" tabindex="-1"></main>
+<p class="yt-toast" id="yt-toast" role="status"></p>
+<noscript><p class="yt-empty">This page needs JavaScript.</p></noscript>
+
+<div class="fx fx-grain" aria-hidden="true"></div>
+<div class="fx fx-scan" aria-hidden="true"></div>
+</body>
+</html>

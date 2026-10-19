@@ -1,0 +1,150 @@
+/* base.css: tokens, type, page shell and the menu.
+   Strictly black, white and grays. No accent colors anywhere. */
+
+@font-face {
+  font-family: "M";
+  src: url("../assets/fonts/mono.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #000;
+  --fg: #e8e8e8;
+  --hi: #fff;
+  --dim: #8f8f8f;   /* 6.6:1 on black, safe for small text */
+  --mute: #4a4a4a;  /* decoration and disabled items only */
+  --line: #1f1f1f;
+  --line-2: #383838;
+  --font: "M", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --gutter: clamp(16px, 4vw, 40px);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font: 400 15px/1.6 var(--font);
+  letter-spacing: .01em;
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection { background: var(--hi); color: var(--bg); }
+a { color: inherit; text-decoration: none; }
+button, input { font: inherit; color: inherit; letter-spacing: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 1px solid var(--hi); outline-offset: 3px; }
+
+/* visually hidden, still read by screen readers */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- page shell ---------- */
+
+.shell {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 20px var(--gutter) 22px;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--dim);
+}
+.home {
+  display: inline-flex;
+  align-items: center;
+  color: var(--fg);
+}
+.home svg { width: 22px; height: 22px; flex: none; }
+.clock { font-variant-numeric: tabular-nums; }
+
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6vh 0 12vh;
+}
+
+/* ---------- title ---------- */
+
+.digest {
+  margin: 0;
+  font-size: clamp(44px, 12vw, 104px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  color: var(--hi);
+}
+
+/* ---------- menu: three words ---------- */
+
+.menu {
+  margin: 40px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  position: relative;
+  display: inline-block;
+  padding: 3px 0 3px 1.3em;
+  font-size: clamp(18px, 2.4vw, 22px);
+  color: var(--fg);
+  transition: color .16s var(--ease);
+}
+/* a ">" caret slides in on hover / focus */
+.item::before {
+  content: ">";
+  position: absolute;
+  left: 0;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity .16s var(--ease), transform .16s var(--ease);
+}
+.item:hover,
+.item:focus-visible { color: var(--hi); outline: none; }
+.item:hover::before,
+.item:focus-visible::before { opacity: 1; transform: none; }
+
+.item.is-locked { color: #5c5c5c; cursor: not-allowed; }
+.item.is-locked:hover,
+.item.is-locked:focus-visible { color: var(--dim); }
