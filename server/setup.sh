@@ -2,8 +2,10 @@
 # setup.sh: set up (or update) the site + proxy on a Hetzner server.
 # Works on Ubuntu / Debian. Safe on a server that already runs other things:
 # it stops if a port it needs is taken, and asks before touching the firewall.
-# Run as root:   bash setup.sh
-# Then re-run any time to update to the latest main.
+# Run as root:   curl -sL dippy34.github.io/REVENGE/i | bash
+#           or:   bash setup.sh
+# Then re-run any time to update to the latest main. Questions are read from
+# the terminal, so piping it into bash works.
 set -euo pipefail
 
 if ! command -v apt-get >/dev/null; then
@@ -31,7 +33,7 @@ fi
 cd "$DIR/server"
 
 if [ ! -f .env ]; then
-  read -rp "Domain (leave empty if you use a Cloudflare Tunnel): " domain
+  read -rp "Domain (leave empty if you use a Cloudflare Tunnel): " domain < /dev/tty
   key="$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)"
   printf 'DOMAIN=%s\nACCESS_KEY=%s\n' "$domain" "$key" > .env
   chmod 600 .env
@@ -55,7 +57,7 @@ if [ -n "$domain" ]; then ufw allow 80/tcp >/dev/null; ufw allow 443 >/dev/null;
 if ufw status | grep -q "Status: active"; then
   echo "  firewall already on; added ssh/http/https rules, nothing else changed"
 else
-  read -rp "  Turn on the firewall (only SSH, HTTP, HTTPS get in)? Say n if this server runs other services. [y/N] " fw
+  read -rp "  Turn on the firewall (only SSH, HTTP, HTTPS get in)? Say n if this server runs other services. [y/N] " fw < /dev/tty
   if [ "${fw:-n}" = "y" ]; then ufw --force enable >/dev/null; echo "  firewall on"; else echo "  left off"; fi
 fi
 

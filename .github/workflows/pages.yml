@@ -25,6 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # short install address for the server: curl -sL dippy34.github.io/REVENGE/i | bash
+      - run: cp server/setup.sh site/i
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

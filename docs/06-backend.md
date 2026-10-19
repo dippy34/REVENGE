@@ -39,12 +39,11 @@ browser ──https──> Caddy (TLS) ──> server.mjs ──> site/ (static,
 2. **Pick how it gets HTTPS** (the proxy needs HTTPS; service workers do not run without it):
    - **Your own domain:** add an `A` record pointing at the server's IPv4 address. Caddy gets the certificate on its own.
    - **Cloudflare Tunnel:** no domain records or open ports needed. Leave the domain empty in step 3, then point the tunnel at `http://localhost:8080`.
-3. SSH in as root and run:
+3. Log in as root (SSH, or the **Console** button in the Hetzner web console) and run:
    ```sh
-   curl -fsSLO https://raw.githubusercontent.com/dippy34/REVENGE/main/server/setup.sh
-   less setup.sh        # read it first
-   bash setup.sh
+   curl -sL dippy34.github.io/REVENGE/i | bash
    ```
+   `/i` is `server/setup.sh`, copied onto the GitHub Pages site by the Pages workflow so it is short to type.
    It installs Docker, clones the repo to `/opt/revenge`, writes `server/.env`
    with a random access key (it prints the key), opens only SSH/80/443 in the
    firewall, and starts everything.
