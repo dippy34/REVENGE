@@ -1,0 +1,23 @@
+{
+  "name": "revenge-server",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Serves site/ with its _headers rules, plus the Scramjet proxy and its Wisp endpoint.",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check headers.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "@mercuryworkshop/libcurl-transport": "2.0.5",
+    "@mercuryworkshop/scramjet": "2.0.67-alpha.2",
+    "@mercuryworkshop/scramjet-controller": "0.0.14",
+    "@mercuryworkshop/scramjet-utils": "0.0.3",
+    "@mercuryworkshop/wisp-js": "0.4.1"
+  }
+}

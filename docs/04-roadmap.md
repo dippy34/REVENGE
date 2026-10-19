@@ -57,9 +57,11 @@
 - Verify headers and noindex on every route.
 - Headless-browser check: no cookies, no unexpected requests.
 
-## Phase 5 - Proxy (last)
-- Scope decision first (see `05-decisions.md`).
-- Same no-logging rules as everything else.
+## Phase 5 - Proxy (built 2026-10-19)
+- [x] Scramjet + Wisp on our own server (`server/`), with pinned versions. Details and test results are in `06-backend.md`.
+- [x] Browser shell at `/proxy/`: address bar (search or URL), back/forward/reload, new page, fullscreen, quick links, access-key prompt.
+- [x] No logging; private/loopback addresses blocked; web ports only; optional access key.
+- [ ] Test real sites on the Hetzner server (this sandbox cannot reach the open web over raw TCP).
 
 ## Phase 6 - Deploy
 - Edge/static host, random hostname, wildcard cert, logs off.

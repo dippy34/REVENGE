@@ -1,0 +1,6 @@
+# Automatic HTTPS for DOMAIN (set in .env). No `log` directive, so Caddy
+# writes no access log. WebSockets (the proxy) pass through on their own.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:8080
+}

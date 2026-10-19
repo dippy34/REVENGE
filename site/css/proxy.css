@@ -1,0 +1,141 @@
+/* proxy.css: the proxy section. Same tokens as base.css; rounded controls
+   to match games and YouTube. Proxied pages keep their own look. */
+
+.p-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px var(--gutter);
+  background: rgba(0, 0, 0, .92);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.p-logo { display: inline-flex; color: var(--fg); }
+.p-logo:hover { color: var(--hi); }
+.p-logo svg { width: 24px; height: 24px; }
+
+.p-nav { display: flex; gap: 4px; }
+.p-ic {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--fg);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  transition: background-color .16s var(--ease), color .16s var(--ease);
+}
+.p-ic:hover { color: var(--hi); background: #1a1a1a; }
+.p-ic:disabled { color: var(--mute); background: none; cursor: default; }
+.p-ic svg { width: 18px; height: 18px; }
+
+.p-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: #0e0e0e;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  transition: border-color .16s var(--ease), background-color .16s var(--ease);
+}
+.p-bar:focus-within { border-color: var(--hi); background: #141414; }
+.p-bar svg { flex: none; width: 16px; height: 16px; color: var(--dim); }
+.p-bar input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0;
+  font-size: 14px;
+  color: var(--hi);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+.p-bar input::placeholder { color: #6e6e6e; opacity: 1; }
+
+.p-view { position: relative; }
+.p-frame {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 57px);
+  height: calc(100dvh - 57px);
+  border: 0;
+  background: #fff;
+}
+
+/* start screen */
+.p-start { max-width: 640px; margin: 14vh auto 0; padding: 0 var(--gutter) 60px; text-align: center; }
+.p-h1 { margin: 0 0 10px; font-size: clamp(26px, 5vw, 38px); font-weight: 400; color: var(--hi); }
+.p-sub { margin: 0; font-size: 13px; line-height: 1.6; color: var(--dim); }
+.p-sub.is-bad { color: var(--hi); }
+.p-quick { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 28px; }
+.p-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  font-size: 13px;
+  color: var(--fg);
+  background: #121212;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  transition: color .16s var(--ease), background-color .16s var(--ease), border-color .16s var(--ease), transform .1s var(--ease);
+}
+.p-btn:hover { color: var(--hi); border-color: #8a8a8a; background: #1a1a1a; }
+.p-btn:active { transform: scale(.97); }
+.p-btn.is-solid { color: var(--bg); background: var(--hi); border-color: var(--hi); }
+.p-btn.is-solid:hover { background: #d4d4d4; }
+
+.p-key { margin-top: 26px; }
+.p-credit { margin: 60px 0 0; font-size: 11px; color: var(--mute); }
+.p-credit a { color: var(--dim); text-decoration: underline; text-underline-offset: 2px; }
+.p-credit a:hover { color: var(--hi); }
+.p-key-row { display: flex; gap: 8px; max-width: 380px; margin: 12px auto 0; }
+.p-key-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 16px;
+  font-size: 15px;
+  color: var(--hi);
+  background: #0e0e0e;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  outline: none;
+}
+.p-key-row input:focus { border-color: var(--hi); }
+
+.p-toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  z-index: 80;
+  margin: 0;
+  padding: 9px 16px;
+  font-size: 12px;
+  color: var(--bg);
+  background: var(--hi);
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 16px);
+  transition: opacity .2s var(--ease), transform .2s var(--ease);
+}
+.p-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* a page is open: hide the overlays that would sit on top of it */
+.browsing .fx { display: none; }
+.browsing { overflow: hidden; }
+
+@media (max-width: 640px) {
+  .p-top { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; }
+  .p-top > .p-nav:first-of-type { display: none; }
+  .p-bar input { font-size: 16px; }
+  .browsing .p-top > .p-nav:first-of-type { display: flex; grid-column: 1 / -1; order: 3; justify-content: center; }
+}

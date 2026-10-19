@@ -1,0 +1,84 @@
+# 06 - Backend (Hetzner) and the Proxy
+
+The proxy needs a real server, so the site now has one. `server/` serves the
+whole site **and** the proxy from one origin. GitHub Pages can stay as a
+mirror, but the proxy only works on the server.
+
+## How it fits together
+
+```
+browser ──https──> Caddy (TLS) ──> server.mjs ──> site/ (static, _headers applied)
+                                       │
+   /proxy/  page + service worker      ├─ /proxy/sj/*   Scramjet, controller, utils, libcurl (pinned)
+   iframe at /proxy/~/...              ├─ /proxy/sw.js  routes proxied requests to the page
+                                       └─ /proxy/wisp/  WebSocket ──> the web (ports 80/443 only)
+```
+
+- **Scramjet** rewrites pages inside the browser. A service worker catches the
+  iframe's requests, and the page sends them out through the **libcurl**
+  transport. libcurl does TLS inside the browser, so the server only relays
+  encrypted bytes over **Wisp**.
+- Versions are pinned in `server/package.json` and installed with `npm ci`.
+  Upstream's `proxy-bootstrap` package is not used, because it downloads
+  "latest" from npm every time it starts.
+
+## Safety settings (server.mjs)
+
+| Setting | Why |
+|---|---|
+| Wisp logging off, container `logging: none` | no record of who visited or where they went |
+| no private or loopback addresses | the proxy cannot reach the server itself or Hetzner's internal network |
+| ports 80 and 443 only, no UDP | the web only; blocks mail spam, SSH scanning and the like |
+| `stream_limit_total: 300` per connection | stops one tab opening endless sockets (`stream_limit_per_host` crashes wisp-js 0.4.1/0.5.0, so it is not used) |
+| optional `ACCESS_KEY` | the Wisp socket refuses anyone without the key, so it is not an open proxy |
+| container: read-only, no capabilities, non-root, port bound to 127.0.0.1 | only Caddy or the tunnel can reach it |
+
+## Deploy on Hetzner
+
+1. Create a Hetzner Cloud server: Ubuntu 24.04, the smallest shared-CPU type is enough to start. Add your SSH key.
+2. **Pick how it gets HTTPS** (the proxy needs HTTPS; service workers do not run without it):
+   - **Your own domain:** add an `A` record pointing at the server's IPv4 address. Caddy gets the certificate on its own.
+   - **Cloudflare Tunnel:** no domain records or open ports needed. Leave the domain empty in step 3, then point the tunnel at `http://localhost:8080`.
+3. SSH in as root and run:
+   ```sh
+   curl -fsSLO https://raw.githubusercontent.com/dippy34/REVENGE/main/server/setup.sh
+   less setup.sh        # read it first
+   bash setup.sh
+   ```
+   It installs Docker, clones the repo to `/opt/revenge`, writes `server/.env`
+   with a random access key (it prints the key), opens only SSH/80/443 in the
+   firewall, and starts everything.
+4. **Updating:** run `bash /opt/revenge/server/setup.sh` again. It pulls `main` and rebuilds.
+
+To change the key: edit `/opt/revenge/server/.env`, then `docker compose up -d` in `/opt/revenge/server`. Visitors are asked for the new key next time.
+
+## Local development
+
+```sh
+cd server && npm ci && node server.mjs     # http://localhost:8080
+```
+
+Service workers are allowed on `localhost` without HTTPS.
+
+## Licences
+
+Scramjet, its controller and utils, and wisp-js are **AGPL-3.0**. They are used
+unmodified and the proxy page credits them with links to their source.
+`server.mjs` imports wisp-js, so treat `server/` as AGPL-3.0 too (its
+`package.json` says so). If the code is ever changed and kept private, its
+source still has to be offered to the people who use the proxy.
+
+## Verified (2026-10-19)
+
+- Headless Chromium against the real `server.mjs`, with a local test site
+  (a test harness let Wisp reach localhost; production keeps it blocked):
+  page load, an in-page `fetch`, link navigation, address bar updates, back, new-page.
+- Access key: no key or a wrong key gets 403 on the socket and a "that key did not
+  work" prompt. The right key is accepted and remembered after a reload.
+- Production filter: loopback is refused.
+- Path traversal (`/../`, `%2e%2e`), `/_headers` and dotfiles return 404.
+- Docker image builds and runs read-only as non-root. All routes answer and the socket upgrades with the key.
+- **Not verified here:** real outside sites. This sandbox's egress gateway re-signs
+  TLS (libcurl rightly rejects it) and does not pass raw port-80 traffic, so
+  public sites could only be tested on the real server. Also not tested:
+  Caddy issuing a certificate, the Cloudflare Tunnel path, Safari and Firefox.

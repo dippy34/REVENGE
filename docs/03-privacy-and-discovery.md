@@ -3,7 +3,7 @@
 Honest framing: "no trace whatsoever" is not achievable. Hosts, registrars, and networks always keep some records. The goal is: collect nothing about visitors, keep nothing that identifies the builder, and stay out of search and discovery.
 
 ## Architecture (nothing to leak)
-- Static files only. No backend, accounts, database, or server logs.
+- Static files plus one proxy server (`server/`). No accounts, database, or server logs: Wisp logging and container logs are off, and Caddy keeps no access log.
 - Self-host fonts, scripts, and assets. No CDNs, analytics, ads, or social embeds.
 - No cookies and no fingerprinting.
 - The menu makes no third-party requests at all.

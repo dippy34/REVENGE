@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-page="proxy">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' data:; media-src 'none'; object-src 'none'; worker-src 'self'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'">
+<meta name="color-scheme" content="dark">
+<title>~/p</title>
+<link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/fx.css">
+<link rel="stylesheet" href="../css/proxy.css">
+<script src="../js/early.js"></script>
+<script src="../js/fx.js" defer></script>
+<script src="../js/proxy.js" defer></script>
+</head>
+<body>
+<div class="fx fx-spot" aria-hidden="true"></div>
+
+<header class="p-top">
+  <a class="p-logo" href="../" aria-label="back to menu">
+    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+  </a>
+  <div class="p-nav">
+    <button type="button" class="p-ic" id="p-back" aria-label="back" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button type="button" class="p-ic" id="p-fwd" aria-label="forward" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    <button type="button" class="p-ic" id="p-reload" aria-label="reload" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
+  </div>
+  <form class="p-bar" id="p-form" role="search" autocomplete="off">
+    <label class="sr" for="p-url">search or type a web address</label>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+    <input id="p-url" type="text" inputmode="url" maxlength="2000" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="go" placeholder="search or type a web address">
+  </form>
+  <div class="p-nav">
+    <button type="button" class="p-ic" id="p-home" aria-label="new page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button type="button" class="p-ic" id="p-full" aria-label="fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  </div>
+</header>
+
+<main class="p-view">
+  <section class="p-start" id="p-start">
+    <h1 class="p-h1">where to?</h1>
+    <p class="p-sub" id="p-status" role="status">starting up</p>
+    <div class="p-quick" id="p-quick" hidden></div>
+
+    <form class="p-key" id="p-key" hidden autocomplete="off">
+      <label class="p-sub" for="p-key-in">this proxy needs an access key</label>
+      <div class="p-key-row">
+        <input id="p-key-in" type="password" maxlength="200" spellcheck="false" autocapitalize="off" placeholder="access key">
+        <button type="submit" class="p-btn is-solid">unlock</button>
+      </div>
+    </form>
+    <p class="p-credit">runs on <a href="https://github.com/MercuryWorkshop/scramjet" rel="noreferrer noopener" target="_blank">scramjet</a> and <a href="https://github.com/MercuryWorkshop/wisp-js" rel="noreferrer noopener" target="_blank">wisp</a> by mercury workshop (AGPL-3.0), unmodified</p>
+  </section>
+  <iframe class="p-frame" id="p-frame" title="proxied page" hidden></iframe>
+</main>
+<p class="p-toast" id="p-toast" role="status"></p>
+<noscript><p class="p-sub">This page needs JavaScript.</p></noscript>
+
+<div class="fx fx-grain" aria-hidden="true"></div>
+<div class="fx fx-scan" aria-hidden="true"></div>
+</body>
+</html>

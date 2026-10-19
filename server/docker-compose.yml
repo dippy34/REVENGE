@@ -1,0 +1,42 @@
+# Two ways to put this online (see docs/06-backend.md):
+#   with your own domain:      docker compose --profile caddy up -d --build
+#   with a Cloudflare Tunnel:  docker compose up -d --build
+#                              and point the tunnel at http://localhost:8080
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"   # only this machine (the tunnel or Caddy)
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      driver: none              # no logs, by design
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["caddy"]
+    restart: unless-stopped
+    depends_on: [app]
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: local             # certificate errors only; Caddy keeps no access log by default
+      options:
+        max-size: "1m"
+        max-file: "1"
+
+volumes:
+  caddy_data:
+  caddy_config:

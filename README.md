@@ -1,9 +1,9 @@
 # Project: Revenge (working title)
 
-A private, static, no-tracking site: **YouTube** and **Games** now, **Proxy** later (shown on the menu as "soon").
+A private, static, no-tracking site: **YouTube**, **Games** and a **Proxy** (Scramjet, on our own Hetzner server).
 Black-and-white, high-effects, "anonymous" feel. Shared by word of mouth and direct URL only.
 
-> Status: **Phases 1-2 built** (menu, theme, effects, YouTube feed) plus a **Games** section. The settings panel and Proxy are next. Build order is in `docs/04-roadmap.md`.
+> Status: **Phases 1-2 built** (menu, theme, effects, YouTube feed) plus **Games** and the **Proxy** (`server/`, see `docs/06-backend.md`). The settings panel and Proxy are next. Build order is in `docs/04-roadmap.md`.
 
 ## Doc index
 
@@ -14,8 +14,9 @@ Black-and-white, high-effects, "anonymous" feel. Shared by word of mouth and dir
 | [docs/03-privacy-and-discovery.md](docs/03-privacy-and-discovery.md) | No-tracking architecture, unlisted/no-index setup, builder hygiene, cloak tools |
 | [docs/04-roadmap.md](docs/04-roadmap.md) | Phases and build order, definition of done per phase |
 | [docs/05-decisions.md](docs/05-decisions.md) | Decisions made, open questions, things we will not build |
+| [docs/06-backend.md](docs/06-backend.md) | The Hetzner server, the proxy, safety settings, how to deploy |
 
-## Code layout (`proxy/` not created yet)
+## Code layout
 
 ```
 Revenge/
@@ -27,18 +28,19 @@ Revenge/
     js/                 menu, effects, cloak tools, panic key
     youtube/            YouTube feed (no-cookie player)
     games/              game grid + sandboxed player page
-    proxy/              last phase
+    proxy/              proxy shell (needs server/)
     assets/             self-hosted fonts, icons (metadata stripped)
+  server/               Node server for the site + Scramjet proxy, Docker, Caddy, setup.sh
   tools/                build + leak-check scripts (strip metadata, scan for external requests)
 ```
 
 ## Deploying to GitHub Pages
 
-`.github/workflows/pages.yml` publishes `site/` on every push to `main`. One-time setup: repo **Settings -> Pages -> Source: GitHub Actions**. Pages ignores `site/_headers`; the CSP in each page's `<meta>` tag still applies.
+The main deploy is the Hetzner server: see `docs/06-backend.md`. GitHub Pages is a mirror without the proxy. `.github/workflows/pages.yml` publishes `site/` on every push to `main`. One-time setup: repo **Settings -> Pages -> Source: GitHub Actions**. Pages ignores `site/_headers`; the CSP in each page's `<meta>` tag still applies.
 
 ## Ground rules
 
-1. Static files only. No backend, accounts, database, or logs.
+1. Static files, plus one small server for the proxy (`server/`). No accounts, database, or logs.
 2. No third-party requests except, in the YouTube section, the no-cookie embed, thumbnails, and nova-hub's search API (see privacy doc).
 3. Black and white only.
 4. The site name is never shown plainly. It is only hinted at or encoded.
