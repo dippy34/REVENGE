@@ -7,6 +7,7 @@ Honest framing: "no trace whatsoever" is not achievable. Hosts, registrars, and 
 - Self-host fonts, scripts, and assets. No CDNs, third-party analytics, ads, or social embeds.
 - No cookies and no fingerprinting.
 - The menu makes no third-party requests at all.
+- On the main server, gn-math game files are fetched by the server (`/jsgh/`), so the visitor's browser does not talk to jsDelivr or GitHub. GitHub/jsDelivr still see the server's IP.
 - The YouTube section has three exceptions, added when it became a feed (see `05-decisions.md`):
   - `nova-hub.dev`: a third party's search API. It sees visitor IPs and the search phrases, which are the visitor's interests.
   - `i.ytimg.com`: thumbnails while browsing. YouTube sees visitor IPs.

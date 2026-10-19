@@ -2,12 +2,12 @@
   "name": "revenge-server",
   "private": true,
   "version": "1.0.0",
-  "description": "Serves site/ with its _headers rules, the Scramjet proxy and its Wisp endpoint, and the R2 games relay.",
+  "description": "Serves site/ with its _headers rules, the Scramjet proxy and its Wisp endpoint, and the R2 and gn-math game relays.",
   "type": "module",
   "main": "server.mjs",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check headers.mjs"
+    "check": "node --check server.mjs && node --check headers.mjs && node --check jsgh.mjs && node --test jsgh.test.mjs"
   },
   "engines": {
     "node": ">=20"

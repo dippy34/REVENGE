@@ -1,8 +1,9 @@
 /* games.js: the games grid. Two sources are merged:
    - our own games from the R2 bucket: games/semag.json lists them, and the
      server relays them under /semag/ (only on the main server)
-   - the gn-math catalog: list and covers from GitHub raw, loaded inside
-     games/play.html
+   - the gn-math catalog: list, covers and game files. On the main server they
+     come through /jsgh/ (jsDelivr blocks gn-math; GitHub raw is text/plain).
+     On a static host they fall back to raw.githubusercontent.com.
    Saved games live in localStorage on this device only. */
 (function () {
   'use strict';
@@ -48,8 +49,14 @@
     btn.title = on ? 'saved' : 'save';
   }
 
+  function serverConfig() {
+    return fetch('/proxy/config.json', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('static host'); return r.json(); })
+      .catch(function () { return {}; });
+  }
+
   // Keep only entries we can safely build URLs from. Featured games go first.
-  function clean(list) {
+  function clean(list, covers) {
     var out = [];
     list.forEach(function (z) {
       if (!z || typeof z.name !== 'string' || typeof z.url !== 'string' || typeof z.id !== 'number') return;
@@ -60,7 +67,7 @@
       if (typeof z.cover !== 'string' || z.cover.indexOf('{COVER_URL}/') !== 0) return;
       var cover = z.cover.slice('{COVER_URL}/'.length);
       if (!/^[A-Za-z0-9_.-]{1,80}$/.test(cover)) return;
-      out.push({ id: z.id, name: z.name.slice(0, 120), src: 'play.html#' + encodeURIComponent(file), cover: COVERS + '/' + cover, hot: z.featured === true });
+      out.push({ id: z.id, name: z.name.slice(0, 120), src: 'play.html#' + encodeURIComponent(file), cover: covers + '/' + cover, hot: z.featured === true });
     });
     return out;
   }
@@ -75,8 +82,7 @@
 
   // Our own games. Only offered when the main server is there to relay them.
   function loadOwn() {
-    return fetch('/proxy/config.json', { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error('static host'); return r.json(); })
+    return serverConfig()
       .then(function (cfg) {
         if (!cfg.semag) throw new Error('no relay');
         return fetch('semag.json');
@@ -101,10 +107,13 @@
   }
 
   function loadCatalog() {
-    return fetch(LIST, { referrerPolicy: 'no-referrer', credentials: 'omit' })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(clean)
-      .catch(function () { return []; });
+    return serverConfig().then(function (cfg) {
+      var list = cfg.jsgh ? '/jsgh/gn-math/assets@main/zones.json' : LIST;
+      var covers = cfg.jsgh ? '/jsgh/gn-math/covers@main' : COVERS;
+      return fetch(list, { referrerPolicy: 'no-referrer', credentials: 'omit' })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (raw) { return clean(raw, covers); });
+    }).catch(function () { return []; });
   }
 
   // Same game in both sources: keep the gn-math version, hide our R2 copy.

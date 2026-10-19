@@ -5,6 +5,7 @@
 //   /proxy/sw.js   the service worker that routes proxied requests
 //   /proxy/wisp/   Wisp over WebSocket: the only part that reaches the web
 //   /semag/*       the R2 games, relayed and cached on disk (see semag.mjs)
+//   /jsgh/*        gn-math game files (jsDelivr / GitHub), relayed and cached
 //   /vendor/ruffle Ruffle (Flash emulator), from its pinned npm package
 //   /api/p         POST: one page view or game play (see stats.mjs)
 //   /api/stats     GET: the counts, with the STATS_KEY
@@ -29,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { server as wisp, logging } from '@mercuryworkshop/wisp-js/server';
 import { loadHeaders, headersFor } from './headers.mjs';
 import { createSemag } from './semag.mjs';
+import { createJsgh } from './jsgh.mjs';
 import { createStats } from './stats.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -54,6 +56,11 @@ const rules = loadHeaders(path.join(SITE, '_headers'));
 const semag = createSemag({
   base: R2_BASE,
   cacheDir: path.join(CACHE_DIR, 'semag'),
+  maxBytes: CACHE_MAX,
+  headersFor: (p) => headersFor(rules, p)
+});
+const jsgh = createJsgh({
+  cacheDir: path.join(CACHE_DIR, 'jsgh'),
   maxBytes: CACHE_MAX,
   headersFor: (p) => headersFor(rules, p)
 });
@@ -183,9 +190,10 @@ const server = http.createServer((req, res) => {
     return send(res, 200, {
       'content-type': 'application/json',
       'cache-control': 'no-store'
-    }, JSON.stringify({ key: !!KEY, semag: true }));
+    }, JSON.stringify({ key: !!KEY, semag: true, jsgh: true }));
   }
   if (urlPath.startsWith('/semag/')) return semag.handle(req, res);
+  if (urlPath.startsWith('/jsgh/')) return jsgh.handle(req, res);
   if (urlPath.startsWith('/vendor/ruffle/')) {
     const name = urlPath.slice('/vendor/ruffle/'.length);
     if (!RUFFLE_FILES.has(name)) return notFound(req, res);

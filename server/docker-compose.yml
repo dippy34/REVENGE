@@ -12,7 +12,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"   # only this machine (the tunnel or Caddy)
     volumes:
-      - games_cache:/cache      # relayed R2 game files
+      - games_cache:/cache      # relayed R2 and gn-math game files
       - stats_data:/data        # daily visit counts
     read_only: true
     cap_drop: [ALL]

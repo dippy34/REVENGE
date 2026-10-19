@@ -103,8 +103,10 @@
 
 ### Games (2026-10-19)
 - **Source:** the same catalogue the ghostlinkhub site uses, which is the `gn-math` repos (`assets/zones.json`, `html`, `covers`).
-  - jsDelivr now blocks `gn-math`, so everything is fetched from `raw.githubusercontent.com` (CORS `*`) instead.
-  - No game files are stored in this repo. The only new third-party host on our own pages is `raw.githubusercontent.com` (connect + img).
+  - jsDelivr returns 403 for the `gn-math` user ("User gn-math is blocked"). The HTML shells still point their `<base href>` and asset URLs at `cdn.jsdelivr.net/gh/...`, including paths under `gn-math` itself. GitHub raw cannot be used as a script CDN: it sends `text/plain` with `nosniff`, so the browser will not run the files.
+  - On the main server, list, covers and game files are relayed under `/jsgh/` (`server/jsgh.mjs`): jsDelivr first (except `gn-math`), then GitHub raw, with a real Content-Type. `play.html` rewrites jsDelivr `/gh/` URLs to `/jsgh/` and Ruffle tags to `/vendor/ruffle/`.
+  - On a static host (GitHub Pages) there is no relay, so the list and covers still come from `raw.githubusercontent.com` and the games still talk to jsDelivr. Games that need `gn-math` assets on jsDelivr will not run there.
+  - No game files are stored in this repo.
 - **UI:** a grid with search, a "saved" filter (stars, kept in `localStorage` key `g-favs`), lazy covers, and a fullscreen player. Covers keep their colour. The discord "suggest games" entry is dropped.
 - **Isolation (changed 2026-10-19 on request):** a game runs in `games/play.html` inside a `sandbox` iframe that includes `allow-same-origin`, so games can save progress.
   - Trade-off: a game shares this site's origin and could read its `localStorage` (the YouTube profile and favourites). Accepted by the owner.

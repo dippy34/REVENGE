@@ -30,7 +30,7 @@ Revenge/
     games/              game grid, player page, semag.json (the R2 game list)
     proxy/              proxy shell (needs server/)
     assets/             self-hosted fonts, icons (metadata stripped)
-  server/               Node server: site, Scramjet proxy, R2 games relay (semag.mjs); Docker, Caddy, setup scripts
+  server/               Node server: site, Scramjet proxy, R2 games relay (semag.mjs), gn-math relay (jsgh.mjs); Docker, Caddy, setup scripts
   tools/                build + leak-check scripts (strip metadata, scan for external requests)
 ```
 

@@ -55,6 +55,32 @@ Unity game makes (HTTP 429) and school filters block it.
 - **Not tested:** Safari (it does not support `credentialless`, so isolated games may
   fail there), and a real phone.
 
+## The gn-math games (`/jsgh/`)
+
+jsDelivr blocks the `gn-math` GitHub user, and the HTML shells still load the
+real game files from `cdn.jsdelivr.net/gh/user/repo@version/...` (often another
+user such as `bubbls`, sometimes `gn-math` itself). Pointing the browser at
+GitHub raw instead does not work: those responses are `text/plain` with
+`X-Content-Type-Options: nosniff`, so scripts and styles are refused.
+
+`server/jsgh.mjs` is the same kind of relay as `/semag/`:
+
+- **URL:** `/jsgh/<user>/<repo>@<ref>/<path>` (the `@<ref>` can be left off).
+  The path is validated; it cannot be pointed at an arbitrary host.
+- **Upstream:** jsDelivr `/gh/` first, except for `gn-math` (always GitHub raw).
+  A 403/404 from jsDelivr falls through to `raw.githubusercontent.com`. The
+  Content-Type is taken from the file extension when upstream sends `text/plain`.
+- **Cache:** disk, under `CACHE_DIR/jsgh`, same size cap as the R2 cache
+  (`CACHE_MAX_MB`, default 4 GB).
+- **Pages:** the games grid asks `/proxy/config.json` for `jsgh`. GitHub Pages
+  has no relay, so there the list still comes from GitHub raw and the games
+  still talk to jsDelivr.
+- **Checked locally (2026-10-19):** `/jsgh/gn-math/assets@main/angry-birds-cffa09e/birds.js`
+  is `text/javascript` (GitHub raw is `text/plain`). In headless Chromium, the
+  catalogue loaded through `/jsgh/`, Angry Birds fetched its `gn-math` wasm/data
+  from `/jsgh/` (those URLs 403 on jsDelivr), and a Unity game (60 Seconds)
+  started with its loader files also coming from `/jsgh/`.
+
 ## Visit counter (`/stats/`)
 
 `site/js/hit.js` (on every page except `/stats/`) sends one small message per page to
