@@ -98,7 +98,11 @@ source still has to be offered to the people who use the proxy.
 - Production filter: loopback is refused.
 - Path traversal (`/../`, `%2e%2e`), `/_headers` and dotfiles return 404.
 - Docker image builds and runs read-only as non-root. All routes answer and the socket upgrades with the key.
-- **Not verified here:** real outside sites. This sandbox's egress gateway re-signs
-  TLS (libcurl rightly rejects it) and does not pass raw port-80 traffic, so
-  public sites could only be tested on the real server. Also not tested:
-  Caddy issuing a certificate, the Cloudflare Tunnel path, Safari and Firefox.
+- **Live server (same day):** `setup-native.sh` ran on `ubuntu-2gb-hel1-2` next to the
+  existing nova-hub services, which still answer. Caddy got a Let's Encrypt
+  certificate. All pages return 200 with the `_headers` rules applied. The socket
+  gives 403 without the key and 101 with it. In headless Chromium, example.com,
+  a Wikipedia article and a DuckDuckGo search all loaded through the proxy with
+  no console errors.
+- **Not verified:** the Docker/Caddy path (`setup.sh`) on a real server, the
+  Cloudflare Tunnel path, Safari, Firefox and phones.
