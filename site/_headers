@@ -13,10 +13,9 @@
 # appended, and two policies would both be enforced.
 #
 # games/ lists and covers come from raw.githubusercontent.com (connect, img).
-# games/play.html runs inside a sandboxed iframe with no allow-same-origin, so
-# the third-party game code in it has an opaque origin and cannot reach this
-# site's storage. It is the only page with a loose CSP, and it is not linked
-# or opened on its own.
+# games/play.html is the only page with a loose CSP (third-party game code). It
+# is framed with allow-same-origin so games can save progress, and it is not
+# linked or opened on its own.
 
 /
   Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src https://nova-hub.dev; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'; frame-ancestors 'self'

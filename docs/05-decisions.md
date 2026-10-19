@@ -106,8 +106,8 @@
   - jsDelivr now blocks `gn-math`, so everything is fetched from `raw.githubusercontent.com` (CORS `*`) instead.
   - No game files are stored in this repo. The only new third-party host on our own pages is `raw.githubusercontent.com` (connect + img).
 - **UI:** a grid with search, a "saved" filter (stars, kept in `localStorage` key `g-favs`), lazy covers, and a fullscreen player. Covers keep their colour. The discord "suggest games" entry is dropped.
-- **Isolation:** a game runs in `games/play.html` inside an iframe with `sandbox` and no `allow-same-origin`.
-  - The game gets an opaque origin, so it cannot read this site's storage (the YouTube profile).
-  - `play.html` shims `localStorage` / `sessionStorage` in memory, because a sandboxed page throws on them. Game saves therefore do not persist.
+- **Isolation (changed 2026-10-19 on request):** a game runs in `games/play.html` inside a `sandbox` iframe that includes `allow-same-origin`, so games can save progress.
+  - Trade-off: a game shares this site's origin and could read its `localStorage` (the YouTube profile and favourites). Accepted by the owner.
+  - `play.html` keeps an in-memory `localStorage` shim for when storage is blocked.
   - `play.html` is the only page with a loose CSP (games need inline scripts, eval and arbitrary https assets). `_headers` is split per path so each page gets exactly one CSP.
-- **Known limits:** the games are third-party code and some call out to ad or analytics hosts, so the no-tracking promise covers our pages, not the games. Some ports may not run (a few need `allow-same-origin` or a GPU).
+- **Known limits:** the games are third-party code and some call out to ad or analytics hosts, so the no-tracking promise covers our pages, not the games. Some ports may not run (a few need a GPU).

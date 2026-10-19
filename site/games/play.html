@@ -8,13 +8,13 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https: blob: data:; style-src 'unsafe-inline' https: data:; img-src https: data: blob:; font-src https: data:; media-src https: data: blob:; connect-src https: data: blob:; worker-src blob: data:; frame-src https: data: blob:; object-src 'none'; base-uri https:">
 <title>~</title>
 <style>html,body{margin:0;height:100%;background:#000;color:#8f8f8f;font:13px ui-monospace,Menlo,Consolas,monospace}p{padding:16px}</style>
-<!-- Runs inside a sandboxed iframe (no allow-same-origin): the game gets an
-     opaque origin and cannot read this site's storage. Third-party game code
-     lives here, so this page has the loose CSP and nothing else does. -->
+<!-- Third-party game code runs here, so this page has the loose CSP and
+     nothing else does. It shares this site's origin on purpose so games can
+     save progress, which means a game can also read this site's storage. -->
 <script>
 (function () {
   'use strict';
-  // Opaque origins throw on storage access; give games an in-memory stand-in.
+  // Only used if storage is blocked: give games an in-memory stand-in.
   ['localStorage', 'sessionStorage'].forEach(function (k) {
     try { void window[k].length; return; } catch (e) { /* blocked */ }
     var m = {};
