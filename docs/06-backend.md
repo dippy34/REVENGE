@@ -51,6 +51,27 @@ browser ──https──> Caddy (TLS) ──> server.mjs ──> site/ (static,
 
 To change the key: edit `/opt/revenge/server/.env`, then `docker compose up -d` in `/opt/revenge/server`. Visitors are asked for the new key next time.
 
+## Adding to a server that already runs Caddy (no Docker)
+
+`server/setup-native.sh` is for a server that already serves other sites through
+Caddy as a system service. It leaves everything else alone:
+
+- The app runs as a `revenge` systemd service on `127.0.0.1:8080`, as its own
+  no-login user, with no logs (stdout/stderr go to `/dev/null`) and systemd
+  hardening (read-only system, no capabilities).
+- One site block for `$DOMAIN` is appended to `/etc/caddy/Caddyfile`. The file is
+  backed up first, checked with `caddy validate`, and restored if the check fails.
+- The access key lives in `/etc/revenge.env` (root only).
+
+```sh
+DOMAIN=631cb8a9.157-180-67-116.sslip.io ACCESS_KEY=... bash /opt/revenge/server/setup-native.sh
+```
+
+Re-run the same command to update to the latest `main`. Since 2026-10-19 this is
+how the Hetzner server `ubuntu-2gb-hel1-2` runs the site: next to the older
+nova-hub services, at `https://631cb8a9.157-180-67-116.sslip.io` (the hostname uses the
+title digest, so the name is not in the URL).
+
 ## Local development
 
 ```sh
