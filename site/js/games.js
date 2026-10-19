@@ -1,6 +1,6 @@
 /* games.js: the games grid. The list and covers come from GitHub raw, the
-   game itself is loaded inside games/play.html (sandboxed, no storage access
-   to this site). Favourites live in localStorage on this device only. */
+   game itself is loaded inside games/play.html. Saved games live in
+   localStorage on this device only. */
 (function () {
   'use strict';
 
@@ -8,47 +8,72 @@
   var LIST = RAW + 'assets/main/zones.json';
   var COVERS = RAW + 'covers/main';
   var CHUNK = 60;
+  var HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.7 3.9 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.6 3.2 4.4 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg>';
 
   var view = document.getElementById('view');
   var input = document.getElementById('g-q');
+  var allBtn = document.getElementById('g-all');
   var favBtn = document.getElementById('g-fav');
-  var count = document.getElementById('g-count');
+  var favN = document.getElementById('g-favn');
   var player = document.getElementById('player');
   var frame = document.getElementById('p-frame');
   var pname = document.getElementById('p-name');
+  var psave = document.getElementById('p-save');
 
   var games = [];
   var shown = [];
   var rendered = 0;
   var favOnly = false;
+  var playing = null;
   var favs = [];
   try { favs = JSON.parse(localStorage.getItem('g-favs') || '[]'); } catch (e) { /* blocked */ }
   if (!Array.isArray(favs)) favs = [];
 
-  function saveFavs() {
+  function isFav(id) { return favs.indexOf(id) !== -1; }
+
+  function toggleFav(id) {
+    var i = favs.indexOf(id);
+    if (i === -1) favs.push(id); else favs.splice(i, 1);
     try { localStorage.setItem('g-favs', JSON.stringify(favs)); } catch (e) { /* blocked */ }
+    favN.textContent = favs.length || '';
+    return i === -1;
   }
 
-  // Keep only entries we can safely build URLs from.
+  function setSave(btn, on, name) {
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.setAttribute('aria-label', (on ? 'unsave ' : 'save ') + name);
+    btn.title = on ? 'saved' : 'save';
+  }
+
+  // Keep only entries we can safely build URLs from. Featured games go first.
   function clean(list) {
     var out = [];
     list.forEach(function (z) {
       if (!z || typeof z.name !== 'string' || typeof z.url !== 'string' || typeof z.id !== 'number') return;
-      if (z.id < 0 || z.url.indexOf('{HTML_URL}/') !== 0) return; // skips the discord ad
+      if (z.id < 0 || z.name.indexOf('[!]') === 0) return; // ads and notices, not games
+      if (z.url.indexOf('{HTML_URL}/') !== 0) return;
       var file = z.url.slice('{HTML_URL}/'.length);
       if (!/^[A-Za-z0-9_.-]{1,80}\.html$/.test(file)) return;
       if (typeof z.cover !== 'string' || z.cover.indexOf('{COVER_URL}/') !== 0) return;
       var cover = z.cover.slice('{COVER_URL}/'.length);
       if (!/^[A-Za-z0-9_.-]{1,80}$/.test(cover)) return;
-      out.push({ id: z.id, name: z.name.slice(0, 120), file: file, cover: COVERS + '/' + cover });
+      out.push({ id: z.id, name: z.name.slice(0, 120), file: file, cover: COVERS + '/' + cover, hot: z.featured === true });
     });
-    out.sort(function (a, b) { return a.name.localeCompare(b.name); });
+    out.sort(function (a, b) { return (b.hot - a.hot) || a.name.localeCompare(b.name); });
     return out;
   }
 
-  function card(g) {
+  // Mix tile sizes in the full list; search results and saved stay uniform.
+  function size(i) {
+    if (input.value.trim() || favOnly) return '';
+    if (i % 9 === 0) return ' is-big';
+    if (i % 9 === 5) return ' is-wide';
+    return '';
+  }
+
+  function card(g, i) {
     var li = document.createElement('li');
-    li.className = 'g-card';
+    li.className = 'g-card' + size(i);
     var open = document.createElement('button');
     open.type = 'button';
     open.className = 'g-open';
@@ -63,24 +88,16 @@
     name.textContent = g.name;
     open.append(img, name);
     open.addEventListener('click', function () { play(g); });
-    var star = document.createElement('button');
-    star.type = 'button';
-    star.className = 'g-star';
-    star.setAttribute('aria-label', 'save ' + g.name);
-    var on = favs.indexOf(g.id) !== -1;
-    star.setAttribute('aria-pressed', on ? 'true' : 'false');
-    star.textContent = on ? '★' : '☆';
-    star.addEventListener('click', function () {
-      var i = favs.indexOf(g.id);
-      if (i === -1) favs.push(g.id); else favs.splice(i, 1);
-      saveFavs();
-      if (favOnly) refresh(); else {
-        var now = i === -1;
-        star.setAttribute('aria-pressed', now ? 'true' : 'false');
-        star.textContent = now ? '★' : '☆';
-      }
+    var save = document.createElement('button');
+    save.type = 'button';
+    save.className = 'g-save';
+    save.innerHTML = HEART;
+    setSave(save, isFav(g.id), g.name);
+    save.addEventListener('click', function () {
+      var on = toggleFav(g.id);
+      if (favOnly && !on) refresh(); else setSave(save, on, g.name);
     });
-    li.append(open, star);
+    li.append(open, save);
     return li;
   }
 
@@ -90,41 +107,58 @@
   function renderMore() {
     var end = Math.min(rendered + CHUNK, shown.length);
     var frag = document.createDocumentFragment();
-    for (; rendered < end; rendered++) frag.appendChild(card(shown[rendered]));
+    for (; rendered < end; rendered++) frag.appendChild(card(shown[rendered], rendered));
     grid.appendChild(frag);
-    if (more) more.hidden = rendered >= shown.length;
+    more.hidden = rendered >= shown.length;
   }
 
   function refresh() {
     var q = input.value.trim().toLowerCase();
     shown = games.filter(function (g) {
-      return (!q || g.name.toLowerCase().indexOf(q) !== -1) && (!favOnly || favs.indexOf(g.id) !== -1);
+      return (!q || g.name.toLowerCase().indexOf(q) !== -1) && (!favOnly || isFav(g.id));
     });
-    count.textContent = shown.length + ' / ' + games.length;
     view.textContent = '';
     rendered = 0;
+
+    var head = document.createElement('div');
+    head.className = 'g-head';
+    var h = document.createElement('h2');
+    h.textContent = q ? 'results' : favOnly ? 'saved' : 'all games';
+    var n = document.createElement('span');
+    n.textContent = shown.length + (shown.length === 1 ? ' game' : ' games');
+    head.append(h, n);
+    view.appendChild(head);
+
     if (!shown.length) {
       var p = document.createElement('p');
       p.className = 'g-empty';
-      p.textContent = favOnly && !q ? 'nothing saved yet' : 'no matches';
+      p.textContent = favOnly && !q ? 'nothing saved yet. tap the heart on a game to keep it here.' : 'no games match "' + input.value.trim() + '"';
       view.appendChild(p);
       return;
     }
     grid = document.createElement('ul');
     grid.className = 'g-grid';
-    grid.style.cssText = 'list-style:none;margin:0;padding:0';
     more = document.createElement('button');
     more.type = 'button';
-    more.className = 'g-fav';
-    more.style.cssText = 'display:block;margin:24px auto 0';
+    more.className = 'g-more';
     more.textContent = 'show more';
     more.addEventListener('click', renderMore);
     view.append(grid, more);
     renderMore();
   }
 
+  function setTab(fav) {
+    favOnly = fav;
+    allBtn.setAttribute('aria-pressed', fav ? 'false' : 'true');
+    favBtn.setAttribute('aria-pressed', fav ? 'true' : 'false');
+    refresh();
+  }
+
   function play(g) {
+    playing = g;
     pname.textContent = g.name;
+    psave.innerHTML = HEART;
+    setSave(psave, isFav(g.id), g.name);
     frame.src = 'play.html#' + encodeURIComponent(g.file);
     player.hidden = false;
     document.documentElement.classList.add('playing');
@@ -135,9 +169,14 @@
     player.hidden = true;
     frame.src = 'about:blank';
     document.documentElement.classList.remove('playing');
+    if (playing) refresh(); // the heart may have changed in the player
+    playing = null;
   }
 
   document.getElementById('p-close').addEventListener('click', close);
+  psave.addEventListener('click', function () {
+    if (playing) setSave(psave, toggleFav(playing.id), playing.name);
+  });
   document.getElementById('p-full').addEventListener('click', function () {
     if (frame.requestFullscreen) frame.requestFullscreen();
     else if (frame.webkitRequestFullscreen) frame.webkitRequestFullscreen();
@@ -147,11 +186,9 @@
   });
   document.getElementById('g-search').addEventListener('submit', function (e) { e.preventDefault(); });
   input.addEventListener('input', refresh);
-  favBtn.addEventListener('click', function () {
-    favOnly = !favOnly;
-    favBtn.setAttribute('aria-pressed', favOnly ? 'true' : 'false');
-    refresh();
-  });
+  allBtn.addEventListener('click', function () { setTab(false); });
+  favBtn.addEventListener('click', function () { setTab(true); });
+  favN.textContent = favs.length || '';
 
   function load() {
     fetch(LIST, { referrerPolicy: 'no-referrer', credentials: 'omit' })
@@ -168,9 +205,9 @@
         p.textContent = 'could not load the game list. ';
         var b = document.createElement('button');
         b.type = 'button';
-        b.className = 'g-fav';
-        b.textContent = 'retry';
-        b.addEventListener('click', function () { view.textContent = 'loading'; load(); });
+        b.className = 'g-more';
+        b.textContent = 'try again';
+        b.addEventListener('click', function () { view.textContent = ''; load(); });
         p.appendChild(b);
         view.appendChild(p);
       });

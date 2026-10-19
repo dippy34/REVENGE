@@ -20,25 +20,36 @@
 <div class="fx fx-spot" aria-hidden="true"></div>
 
 <header class="g-top">
-  <a class="g-logo" href="../" aria-label="back to menu">
+  <a class="g-back" href="../" aria-label="back to menu">
     <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+    <span>games</span>
   </a>
   <form class="g-search" id="g-search" role="search" autocomplete="off">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
     <label class="sr" for="g-q">search games</label>
     <input id="g-q" type="search" maxlength="100" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="search games">
   </form>
-  <button class="g-fav" id="g-fav" type="button" aria-pressed="false">saved</button>
-  <span class="g-count" id="g-count" aria-live="polite"></span>
+  <div class="g-tabs" role="group" aria-label="show">
+    <button type="button" id="g-all" aria-pressed="true">all</button>
+    <button type="button" id="g-fav" aria-pressed="false">saved <span class="g-n" id="g-favn"></span></button>
+  </div>
 </header>
 
-<main class="g-view" id="view" tabindex="-1"><p class="g-empty">loading</p></main>
+<main class="g-view" id="view" tabindex="-1"><p class="g-empty">loading games</p></main>
 
 <div class="g-player" id="player" hidden>
   <div class="g-bar">
+    <button type="button" class="g-btn" id="p-close" aria-label="back to games">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      <span>games</span>
+    </button>
     <strong id="p-name"></strong>
-    <span class="g-btns">
-      <button type="button" id="p-full">fullscreen</button>
-      <button type="button" id="p-close">close</button>
+    <span class="g-bar-r">
+      <button type="button" class="g-btn g-icon" id="p-save" aria-pressed="false" aria-label="save game"></button>
+      <button type="button" class="g-btn" id="p-full">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+        <span>fullscreen</span>
+      </button>
     </span>
   </div>
   <iframe id="p-frame" title="game" sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-popups" allow="fullscreen; gamepad; autoplay"></iframe>

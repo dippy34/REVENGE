@@ -63,6 +63,24 @@
     return el;
   }
 
+  // icon('M..'): a stroked 24x24 line icon from one or more path strings
+  function icon() {
+    var ns = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    for (var i = 0; i < arguments.length; i++) {
+      var p = document.createElementNS(ns, 'path');
+      p.setAttribute('d', arguments[i]);
+      svg.appendChild(p);
+    }
+    return svg;
+  }
+
   // add(el, ...children): nodes, strings, arrays of them; null is skipped
   function add(el) {
     for (var i = 1; i < arguments.length; i++) put(el, arguments[i]);
@@ -400,11 +418,15 @@
     var chosen = me.interests();
     var input = h('input', {
       id: 'like-q', type: 'text', maxlength: '60', autocomplete: 'off', spellcheck: 'false',
-      autocapitalize: 'off', enterkeyhint: 'enter', placeholder: 'something you like'
+      autocapitalize: 'off', enterkeyhint: 'enter', placeholder: 'type a topic'
     });
     var mine = h('div', { class: 'chips' });
+    var none = h('p', { class: 'picks-empty', text: 'nothing yet. type a topic above or tap one below.' });
+    var bars = [h('i'), h('i'), h('i')];
+    var meterText = h('span');
     var ideas = h('div', { class: 'chips is-ideas' });
-    var go = h('button', { class: 'btn-go', type: 'button', text: 'build my feed' });
+    var goText = h('span', { text: 'build my feed' });
+    var go = h('button', { class: 'btn-go', type: 'button' }, goText, icon('M5 12h14', 'M13 6l6 6-6 6'));
     var hint = h('p', { class: 'build-hint' });
     var log = h('div', { class: 'build-log', 'aria-live': 'polite' });
 
@@ -426,11 +448,15 @@
       });
       SUGGEST.forEach(function (s) {
         if (chosen.indexOf(s) >= 0) return;
-        ideas.appendChild(h('button', { class: 'chip', type: 'button', onclick: function () { addLike(s); } }, '+ ' + s));
+        ideas.appendChild(h('button', { class: 'chip', type: 'button', onclick: function () { addLike(s); } },
+          h('span', { class: 'chip-plus', 'aria-hidden': 'true', text: '+' }), s));
       });
+      none.hidden = chosen.length > 0;
+      bars.forEach(function (b, i) { b.className = i < chosen.length ? 'on' : ''; });
+      meterText.textContent = chosen.length + ' picked';
       go.disabled = !chosen.length;
-      hint.textContent = chosen.length >= 3 ? chosen.length + ' picked' :
-        chosen.length ? 'add ' + (3 - chosen.length) + ' more for a better mix' : 'pick at least one';
+      hint.textContent = chosen.length >= 3 ? 'nice mix. ready when you are.' :
+        chosen.length ? 'add ' + (3 - chosen.length) + ' more for a better mix' : 'pick at least one topic';
     }
     function say(text, cls) {
       log.appendChild(h('div', { class: cls || '', text: text }));
@@ -451,7 +477,7 @@
         say('> ' + err.message, 'is-bad');
         go.disabled = false;
         input.disabled = false;
-        go.textContent = 'try again';
+        goText.textContent = 'try again';
       });
     }
 
@@ -465,18 +491,23 @@
     go.addEventListener('click', build);
 
     mount(h('section', { class: 'start' },
-      h('h1', { class: 'yt-h1', text: 'build your feed' }),
-      h('p', { class: 'start-sub', text: 'type what you like and press enter. games, sports, music, anything.' }),
+      h('h1', { class: 'yt-h1', text: 'what are you into?' }),
+      h('p', { class: 'start-sub', text: 'pick a few topics and we will build your feed from them. it keeps learning from what you watch.' }),
       h('div', { class: 'start-field' },
-        h('label', { class: 'sr', for: 'like-q', text: 'something you like' }),
-        h('span', { class: 'start-prompt', 'aria-hidden': 'true', text: '>' }),
+        h('label', { class: 'sr', for: 'like-q', text: 'add a topic' }),
+        h('span', { class: 'start-prompt' }, icon('M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z', 'm16 16 4.5 4.5')),
         input,
-        h('button', { class: 'pill', type: 'button', text: 'add', onclick: function () { addLike(input.value); input.value = ''; input.focus(); } })),
-      mine,
-      h('p', { class: 'start-label', text: 'ideas' }),
+        h('button', { class: 'pill is-solid', type: 'button', text: 'add', onclick: function () { addLike(input.value); input.value = ''; input.focus(); } })),
+      h('div', { class: 'picks' },
+        h('div', { class: 'picks-head' },
+          h('p', { class: 'start-label', text: 'your picks' }),
+          h('div', { class: 'meter', 'aria-hidden': 'true' }, bars, meterText)),
+        none,
+        mine),
+      log,
+      h('p', { class: 'start-label', text: 'popular topics' }),
       ideas,
-      h('div', { class: 'start-go' }, go, hint),
-      log));
+      h('div', { class: 'start-go' }, h('div', { class: 'start-go-in' }, hint, go))));
     paint();
     input.focus();
   }
