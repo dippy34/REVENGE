@@ -6,12 +6,26 @@
 #           or:   bash setup.sh
 # Then re-run any time to update to the latest main. Questions are read from
 # the terminal, so piping it into bash works.
+#
+# No terminal (e.g. cloud-init on a new server)? Answer with env vars:
+#   DOMAIN=example.com | auto (free <ip>.sslip.io name with real HTTPS) | empty (tunnel)
+#   ACCESS_KEY=...     (generated if unset)
+#   FIREWALL=y|n       (default n)
 set -euo pipefail
 
 if ! command -v apt-get >/dev/null; then
   echo "This script needs Ubuntu or Debian (apt). Tell Claude which OS this is." >&2
   exit 1
 fi
+
+# ask VAR "question": use $VAR if set, else ask on the terminal, else empty
+ask() {
+  local var="$1" q="$2" a=""
+  if [ -n "${!var+x}" ]; then a="${!var}"
+  elif [ -r /dev/tty ] && { : < /dev/tty; } 2>/dev/null; then read -rp "$q" a < /dev/tty
+  fi
+  printf '%s' "$a"
+}
 
 # Something else already on a port we need? (our own containers are fine)
 busy() { ss -Htln "sport = :$1" | grep -q . && ! docker ps --format '{{.Ports}}' 2>/dev/null | grep -q ":$1->"; }
@@ -21,7 +35,7 @@ DIR="${DIR:-/opt/revenge}"
 
 echo "> installing docker and git"
 apt-get update -qq
-apt-get install -y -qq docker.io docker-compose-v2 git ufw openssl >/dev/null
+apt-get install -y -qq docker.io docker-compose-v2 docker-buildx git ufw openssl curl >/dev/null
 systemctl enable --now docker >/dev/null
 
 echo "> getting the code"
@@ -33,8 +47,13 @@ fi
 cd "$DIR/server"
 
 if [ ! -f .env ]; then
-  read -rp "Domain (leave empty if you use a Cloudflare Tunnel): " domain < /dev/tty
-  key="$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)"
+  domain="$(ask DOMAIN "Domain (empty for a Cloudflare Tunnel, 'auto' for a free <ip>.sslip.io address): ")"
+  if [ "$domain" = "auto" ]; then
+    ip="$(curl -s -m 5 http://169.254.169.254/hetzner/v1/metadata/public-ipv4 || true)"
+    [ -n "$ip" ] || ip="$(ip -4 route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')"
+    domain="${ip//./-}.sslip.io"
+  fi
+  key="${ACCESS_KEY:-$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)}"
   printf 'DOMAIN=%s\nACCESS_KEY=%s\n' "$domain" "$key" > .env
   chmod 600 .env
   echo "> your proxy access key is: $key   (also saved in $DIR/server/.env)"
@@ -57,7 +76,7 @@ if [ -n "$domain" ]; then ufw allow 80/tcp >/dev/null; ufw allow 443 >/dev/null;
 if ufw status | grep -q "Status: active"; then
   echo "  firewall already on; added ssh/http/https rules, nothing else changed"
 else
-  read -rp "  Turn on the firewall (only SSH, HTTP, HTTPS get in)? Say n if this server runs other services. [y/N] " fw < /dev/tty
+  fw="$(ask FIREWALL "  Turn on the firewall (only SSH, HTTP, HTTPS get in)? Say n if this server runs other services. [y/N] ")"
   if [ "${fw:-n}" = "y" ]; then ufw --force enable >/dev/null; echo "  firewall on"; else echo "  left off"; fi
 fi
 
