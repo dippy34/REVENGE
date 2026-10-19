@@ -12,7 +12,7 @@ People who get the link by word of mouth. No marketing, no search presence, no a
 - Works like normal YouTube: a home feed, Shorts, search, channels, subscriptions, likes, history.
 - First visit asks you to build your feed from things you like. The feed then learns from what you watch, skip, like and subscribe to.
 - Plays through the **privacy-enhanced embed** (`youtube-nocookie.com`). Pasting a link still plays any video.
-- No API keys. Search data comes from nova-hub's public API (see `05-decisions.md`). The only backend is the proxy server in `server/` (see `06-backend.md`).
+- No YouTube Data API key. Search goes to this origin; the server calls YouTube (see `05-decisions.md`). The backend is the proxy server in `server/` (see `06-backend.md`).
 - Your profile, likes, subscriptions and history live only in your own browser (`localStorage`). One button forgets them.
 
 ### 2. Proxy (built last)

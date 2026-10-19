@@ -1,13 +1,14 @@
-/* yt-api.js: client for nova-hub's public YouTube API (search, channel
-   tabs, video details), the same endpoints their own site uses.
+/* yt-api.js: client for this origin's YouTube API (search, channel
+   tabs, video details). The server talks to YouTube; this page does not
+   contact nova-hub or any other search host.
    Everything that comes back is someone else's data, so it is treated as
    untrusted: ids are checked against strict patterns, text is trimmed, and
    the UI only ever renders it as text. Results are cached in localStorage
-   for a short while so repeat views do not hammer their server. */
+   for a short while so repeat views do not hammer the server. */
 (function () {
   'use strict';
 
-  var BASE = 'https://nova-hub.dev/api/';
+  var BASE = '/api/';
   var TIMEOUT = 12000;
   var CACHE_KEY = 'yt.cache';
   var CACHE_MAX = 40;                 // entries; each is a trimmed result list
@@ -17,7 +18,7 @@
 
   var ID = /^[A-Za-z0-9_-]{11}$/;
   var CH = /^UC[A-Za-z0-9_-]{22}$/;
-  var TOKEN = /^[A-Za-z0-9_%=-]{1,4096}$/;
+  var TOKEN = /^[A-Za-z0-9_%=.+\/-]{1,4096}$/;
   var DURATION = /^\d{1,3}(:\d{2}){1,2}$/;
 
   function str(v, max) {
@@ -116,7 +117,7 @@
         .finally(function () { clearTimeout(timer); });
     }
 
-    // Their upstream times out now and then (502/504); one retry fixes most.
+    // YouTube times out now and then (502/504); one retry fixes most.
     var p = once()
       .catch(function () {
         return new Promise(function (ok) { setTimeout(ok, 700); }).then(once);

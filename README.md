@@ -30,7 +30,7 @@ Revenge/
     games/              game grid, player page, semag.json (the R2 game list)
     proxy/              proxy shell (needs server/)
     assets/             self-hosted fonts, icons (metadata stripped)
-  server/               Node server: site, Scramjet proxy, R2 games relay (semag.mjs), gn-math relay (jsgh.mjs); Docker, Caddy, setup scripts
+  server/               Node server: site, Scramjet proxy, R2/gn-math relays, YouTube search (tube.mjs); Docker, Caddy, setup scripts
   tools/                build + leak-check scripts (strip metadata, scan for external requests)
 ```
 
@@ -41,7 +41,7 @@ The main deploy is the Hetzner server, live at https://631cb8a9.com: see `docs/0
 ## Ground rules
 
 1. Static files, plus one small server for the proxy (`server/`). No accounts, database, or logs.
-2. No third-party requests except, in the YouTube section, the no-cookie embed, thumbnails, and nova-hub's search API (see privacy doc).
+2. No third-party requests except, in the YouTube section, the no-cookie embed and thumbnails. Search goes to this origin (see privacy doc).
 3. Black and white only.
 4. The site name is never shown plainly. It is only hinted at or encoded.
 5. Not for targeting, harassing, or exposing any person. See `docs/05-decisions.md`.

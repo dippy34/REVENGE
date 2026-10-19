@@ -30,15 +30,14 @@
   - Every page repeats the CSP as a `<meta>` tag, minus `frame-ancestors`.
 - **CSP:**
   - `default-src 'none'`, with only `'self'` for scripts, styles and fonts.
-  - `img-src 'self' https://i.ytimg.com` and `connect-src https://nova-hub.dev`.
+  - `img-src 'self' https://i.ytimg.com` and `connect-src 'self'` (YouTube search is same-origin).
   - `frame-src 'self' https://www.youtube-nocookie.com`.
 
 ### YouTube feed (2026-10-18, replaces the Phase 2 link-in/player-out page)
-- **Search data comes from nova-hub's public API**, at the user's request, after looking at how github.com/dippy34/nova-hub does it.
-  - Endpoints: `https://nova-hub.dev/api/tube-search` and `/api/tube-video`.
-  - That API is their Cloudflare Function calling YouTube's internal web API. No API key is involved, and it allows any origin (CORS `*`).
-  - So this site still has no backend of its own. No code from that repo was copied; it is GPL-3.0.
-  - The client (`js/yt-api.js`) validates every field, renders text only, caches results in `localStorage` for 30 min (details 6 h), and retries once, because their upstream returns 502/504 now and then.
+- **Search data comes from this origin** (`/api/tube-search`, `/api/tube-video` on `server/tube.mjs`). The browser does not contact nova-hub.
+  - The server calls YouTube's own InnerTube web API (the same one youtube.com uses). No YouTube Data API key. Searches are not stored.
+  - GitHub Pages has no server, so the YouTube feed only works on the main host (same as the proxy and the game relays).
+  - The client (`js/yt-api.js`) validates every field, renders text only, caches results in `localStorage` for 30 min (details 6 h), and retries once.
 - **Thumbnails load from `i.ytimg.com`** while browsing, chosen by the user, and are shown in colour (switched from grayscale on request).
   - Videos use the light `mqdefault` size. Shorts use the vertical URL the API returns, but only if it is on `i.ytimg.com` for that same video.
   - Avatars are monograms, not images: one less host, and no faces.
@@ -84,7 +83,7 @@
 2. **Hosting provider and domain** (pseudonymous registration).
 3. **Passphrase gate:** yes or no?
 4. **"Watch on YouTube" inside the player:** the sandbox blocks popups, so the player's YouTube logo and its fallback for videos that disallow embedding do nothing. Should `allow-popups` be added?
-5. **Depending on nova-hub.dev:** keep using it, or self-host an equivalent function later? Either way, the feed is down whenever that API is.
+5. ~~**Depending on nova-hub.dev**~~ decided 2026-10-19: the feed uses `/api/tube-*` on our server instead.
 
 ## Will not build
 - Anything meant to target, harass, expose, or deceive a specific person or group.
@@ -95,7 +94,7 @@
 - Cloaking features hide things only from someone looking at the screen or browser history, not from network monitoring.
 - A public URL cannot be made invisible to everything. It can be kept out of search and discovery.
 - The digest is a hint, not a secret. An unsalted hash of a dictionary word can be reversed with a simple lookup.
-- **nova-hub.dev sees** every visitor's IP address and the search phrases the feed sends, which are your interests. It may log them, rate-limit, change the API or block other sites at any time.
+- **YouTube sees** the server's IP for every search, channel view and details fetch (InnerTube). It does not see the visitor's IP for those calls. Search phrases still leave this machine.
 - **YouTube sees** visitor IPs:
   - while browsing, via thumbnails from `i.ytimg.com`
   - once a video plays, via the embed, which also learns the site's origin

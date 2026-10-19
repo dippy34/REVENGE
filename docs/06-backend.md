@@ -81,6 +81,17 @@ GitHub raw instead does not work: those responses are `text/plain` with
   from `/jsgh/` (those URLs 403 on jsDelivr), and a Unity game (60 Seconds)
   started with its loader files also coming from `/jsgh/`.
 
+## YouTube search (`/api/tube-*`)
+
+The YouTube feed used to call `nova-hub.dev`. It now stays on this origin:
+
+- `GET /api/tube-search?q=&filter=videos|shorts|all` and `?channel=UC…&tab=videos|shorts`
+- `GET /api/tube-video?ids=id,id`
+
+`server/tube.mjs` calls YouTube's InnerTube web API (search, browse, player, next).
+No YouTube Data API key. Queries are not written down. GitHub Pages has no server,
+so the feed only works here.
+
 ## Visit counter (`/stats/`)
 
 `site/js/hit.js` (on every page except `/stats/`) sends one small message per page to

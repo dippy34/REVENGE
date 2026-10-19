@@ -9,6 +9,7 @@
 //   /vendor/ruffle Ruffle (Flash emulator), from its pinned npm package
 //   /api/p         POST: one page view or game play (see stats.mjs)
 //   /api/stats     GET: the counts, with the STATS_KEY
+//   /api/tube-*    YouTube search / channel / details (see tube.mjs)
 //
 // Nothing is logged: no access log, and Wisp's own logging is switched off.
 //
@@ -31,6 +32,7 @@ import { server as wisp, logging } from '@mercuryworkshop/wisp-js/server';
 import { loadHeaders, headersFor } from './headers.mjs';
 import { createSemag } from './semag.mjs';
 import { createJsgh } from './jsgh.mjs';
+import { createTube } from './tube.mjs';
 import { createStats } from './stats.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -64,6 +66,7 @@ const jsgh = createJsgh({
   maxBytes: CACHE_MAX,
   headersFor: (p) => headersFor(rules, p)
 });
+const tube = createTube();
 
 // Ruffle: only the files that exist in the package, by exact name
 const RUFFLE_DIR = path.join(here, 'node_modules', '@ruffle-rs', 'ruffle');
@@ -171,6 +174,8 @@ const server = http.createServer((req, res) => {
     return send(res, 405, { allow: 'GET, HEAD' }, '');
   }
   if (urlPath === '/api/stats') return stats.report(req, res);
+  if (urlPath === '/api/tube-search') return tube.handleSearch(req, res);
+  if (urlPath === '/api/tube-video') return tube.handleVideo(req, res);
 
   if (urlPath === '/proxy/sw.js') {
     return send(res, 200, {

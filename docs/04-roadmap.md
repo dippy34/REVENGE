@@ -28,7 +28,7 @@
   - [x] Watch page: autoplaying no-cookie player, like, subscribe, not interested, up next.
   - [x] Search (pasting a link plays it), channel pages, subscriptions feed, library.
   - [x] On-device algorithm that learns from opens, watch time, Shorts skips, likes, subscribes, searches and "not interested", with a 14-day half-life.
-  - [x] Search data from nova-hub's public API, thumbnails from `i.ytimg.com` (in colour).
+  - [x] Search data from this origin (`/api/tube-*`), thumbnails from `i.ytimg.com` (in colour).
 - Verified in the built-in browser:
   - Onboarding builds a 48-video feed, and scrolling adds the next batch.
   - Interleaving order is correct.
@@ -37,9 +37,9 @@
   - The Shorts reel works.
   - Search, channel, subscriptions and library work.
   - At 375 px there is no horizontal scroll.
-  - Hosts contacted: self, `nova-hub.dev`, `i.ytimg.com`, plus `youtube-nocookie.com` on play. No cookies.
+  - Hosts contacted: self, `i.ytimg.com`, plus `youtube-nocookie.com` on play. No cookies.
   - Parser tests: 41 cases (first version) and 19 for the search box.
-- Known: nova-hub's API intermittently returns 502/504. The client retries once; a topic that still fails is skipped for that batch.
+- Known: YouTube intermittently returns 502/504. The client retries once; a topic that still fails is skipped for that batch.
 - Not verified: Safari, Firefox, a real phone, and how the feed feels after days of real use.
 
 ## Phase 3 - Settings panel
@@ -49,7 +49,7 @@
 
 ## Phase 4 - Hardening + Leak check
 - `tools/` script: strip metadata, scan output for personal strings, local paths, and external URLs.
-  - A manual scan on 2026-10-18 came back clean. Allowed hosts are `nova-hub.dev`, `i.ytimg.com` and `www.youtube-nocookie.com`. Other known harmless hits the script must allowlist:
+  - A manual scan on 2026-10-18 came back clean. Allowed hosts are `i.ytimg.com` and `www.youtube-nocookie.com`. Other known harmless hits the script must allowlist:
     - the SVG `xmlns` namespace URL
     - the URLs inside `assets/fonts/OFL.txt`
     - the bare YouTube host names in the link parser in `js/yt-app.js`

@@ -7,7 +7,7 @@
   "main": "server.mjs",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check headers.mjs && node --check jsgh.mjs && node --test jsgh.test.mjs"
+    "check": "node --check server.mjs && node --check headers.mjs && node --check jsgh.mjs && node --check tube.mjs && node --test jsgh.test.mjs tube.test.mjs"
   },
   "engines": {
     "node": ">=20"
