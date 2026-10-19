@@ -230,13 +230,12 @@
     };
   })();
 
-  /* ---------- cursor + spotlight ---------- */
+  /* ---------- cursor ---------- */
 
   function initCursor() {
     if (!mqFine.matches || reduced()) return;
     var dot = make('div', 'cur cur-dot');
     var ring = make('div', 'cur cur-ring');
-    var spot = document.querySelector('.fx-spot');
     document.body.appendChild(dot);
     document.body.appendChild(ring);
     root.classList.add('has-cursor');
@@ -247,14 +246,10 @@
       ring.classList.toggle('on', on);
     }
     function tick() {
-      // the ring trails the dot; the spotlight follows the ring
+      // the ring trails the dot
       rx += (x - rx) * 0.2;
       ry += (y - ry) * 0.2;
       ring.style.transform = 'translate3d(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px,0)';
-      if (spot) {
-        spot.style.setProperty('--mx', rx.toFixed(1) + 'px');
-        spot.style.setProperty('--my', ry.toFixed(1) + 'px');
-      }
       raf = Math.abs(x - rx) + Math.abs(y - ry) > 0.3 ? requestAnimationFrame(tick) : 0;
     }
 

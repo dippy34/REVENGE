@@ -6,6 +6,8 @@
 //   /proxy/wisp/   Wisp over WebSocket: the only part that reaches the web
 //   /semag/*       the R2 games, relayed and cached on disk (see semag.mjs)
 //   /vendor/ruffle Ruffle (Flash emulator), from its pinned npm package
+//   /api/p         POST: one page view or game play (see stats.mjs)
+//   /api/stats     GET: the counts, with the STATS_KEY
 //
 // Nothing is logged: no access log, and Wisp's own logging is switched off.
 //
@@ -15,6 +17,10 @@
 //   R2_BASE      public address of the games bucket (default: the owner's)
 //   CACHE_DIR    where relayed game files are kept (default ./.cache)
 //   CACHE_MAX_MB size cap for that cache (default 4096)
+//   STATS_KEY    password for /stats/; if unset, the stats page is off
+//                (visits are still counted)
+//   STATS_DIR    where the daily counts are saved (default ./.data)
+//   STATS_TZ     time zone that decides where a day starts (default America/Chicago)
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { server as wisp, logging } from '@mercuryworkshop/wisp-js/server';
 import { loadHeaders, headersFor } from './headers.mjs';
 import { createSemag } from './semag.mjs';
+import { createStats } from './stats.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -33,6 +40,14 @@ const KEY = process.env.ACCESS_KEY || '';
 const R2_BASE = process.env.R2_BASE || 'https://pub-31ddb721e92142be8b2deee228c36013.r2.dev';
 const CACHE_DIR = path.resolve(process.env.CACHE_DIR || path.join(here, '.cache'));
 const CACHE_MAX = Math.max(64, Number(process.env.CACHE_MAX_MB || 4096)) * 1024 * 1024;
+
+const stats = createStats({
+  dir: path.resolve(process.env.STATS_DIR || path.join(here, '.data')),
+  key: process.env.STATS_KEY || '',
+  tz: process.env.STATS_TZ || 'America/Chicago'
+});
+// save the counts before systemd or Docker stops us
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { stats.flush(); process.exit(0); });
 
 const rules = loadHeaders(path.join(SITE, '_headers'));
 
@@ -143,10 +158,12 @@ function resolveSite(urlPath) {
 }
 
 const server = http.createServer((req, res) => {
+  const urlPath = new URL(req.url, 'http://x').pathname;
+  if (req.method === 'POST' && urlPath === '/api/p') return stats.hit(req, res);
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return send(res, 405, { allow: 'GET, HEAD' }, '');
   }
-  const urlPath = new URL(req.url, 'http://x').pathname;
+  if (urlPath === '/api/stats') return stats.report(req, res);
 
   if (urlPath === '/proxy/sw.js') {
     return send(res, 200, {
@@ -201,5 +218,5 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`listening on http://${HOST}:${PORT} (proxy key ${KEY ? 'on' : 'off'})`);
+  console.log(`listening on http://${HOST}:${PORT} (proxy key ${KEY ? 'on' : 'off'}, stats page ${process.env.STATS_KEY ? 'on' : 'off'})`);
 });

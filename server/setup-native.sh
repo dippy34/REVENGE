@@ -37,14 +37,23 @@ if [ -d "$DIR/.git" ]; then git -C "$DIR" pull -q --ff-only; else git clone -q -
 (cd "$DIR/server" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund --loglevel=error)
 
 echo "> settings"
-# ACCESS_KEY set (even to empty) replaces the saved one; empty means no key.
-# Unset keeps the saved key, or makes a new one on first install.
-if [ -n "${ACCESS_KEY+x}" ]; then
-  printf 'ACCESS_KEY=%s\n' "$ACCESS_KEY" > "$ENVF"
-elif [ ! -f "$ENVF" ]; then
-  printf 'ACCESS_KEY=%s\n' "$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)" > "$ENVF"
-fi
+# For ACCESS_KEY (proxy lock) and STATS_KEY (the /stats/ page):
+# set, even to empty, replaces the saved value (empty = off);
+# unset keeps the saved one, or makes a new one on first install.
+touch "$ENVF"
 chmod 600 "$ENVF"
+getvar() { grep -m1 "^$1=" "$ENVF" | cut -d= -f2- || true; }
+setvar() {
+  { grep -v "^$1=" "$ENVF" || true; printf '%s=%s\n' "$1" "$2"; } > "$ENVF.tmp"
+  mv "$ENVF.tmp" "$ENVF"
+  chmod 600 "$ENVF"
+}
+newkey() { openssl rand -base64 18 | tr -d '/+=' | cut -c1-20; }
+for v in ACCESS_KEY STATS_KEY; do
+  if [ -n "${!v+x}" ]; then setvar "$v" "${!v}"
+  elif ! grep -q "^$v=" "$ENVF"; then setvar "$v" "$(newkey)"
+  fi
+done
 
 echo "> service"
 cat > "$UNIT" <<EOF
@@ -57,7 +66,10 @@ Wants=network-online.target
 User=revenge
 WorkingDirectory=$DIR/server
 EnvironmentFile=$ENVF
-Environment=HOST=127.0.0.1 PORT=$PORT NODE_ENV=production CACHE_DIR=/var/cache/revenge
+Environment=HOST=127.0.0.1 PORT=$PORT NODE_ENV=production CACHE_DIR=/var/cache/revenge STATS_DIR=/var/lib/revenge
+# daily visit counts are saved here (no IPs, see server/stats.mjs)
+StateDirectory=revenge
+StateDirectoryMode=0750
 # game files relayed from the R2 bucket are cached here (size capped by CACHE_MAX_MB)
 CacheDirectory=revenge
 CacheDirectoryMode=0750
@@ -67,7 +79,7 @@ RestartSec=2
 # no logs, by design
 StandardOutput=null
 StandardError=null
-# hardening: read-only system (except the cache above), no privileges,
+# hardening: read-only system (except the cache and state dirs above), no privileges,
 # network + unix sockets only
 NoNewPrivileges=yes
 ProtectSystem=strict
@@ -119,5 +131,7 @@ for i in $(seq 1 20); do
 done
 if [ "$code" != "200" ]; then echo "app did not answer on port $PORT (got $code)" >&2; exit 1; fi
 echo "> done: https://$DOMAIN"
-key="$(cut -d= -f2- "$ENVF")"
+key="$(getvar ACCESS_KEY)"
+skey="$(getvar STATS_KEY)"
 echo "  proxy access key: ${key:-none (open)}"
+echo "  stats page: https://${DOMAIN%%,*}/stats/  key: ${skey:-none (stats page off)}"

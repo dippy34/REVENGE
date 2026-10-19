@@ -1,6 +1,6 @@
 # Project: Revenge (working title)
 
-A private, static, no-tracking site: **YouTube**, **Games** and a **Proxy** (Scramjet, on our own Hetzner server).
+A private site with no third-party tracking (only its own anonymous visit counter, see `docs/06-backend.md`): **YouTube**, **Games** and a **Proxy** (Scramjet, on our own Hetzner server).
 Black-and-white, high-effects, "anonymous" feel. Shared by word of mouth and direct URL only.
 
 > Status: **Phases 1-2 built** (menu, theme, effects, YouTube feed) plus **Games** and the **Proxy** (`server/`, see `docs/06-backend.md`). The settings panel and Proxy are next. Build order is in `docs/04-roadmap.md`.

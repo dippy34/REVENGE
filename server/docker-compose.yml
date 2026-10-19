@@ -13,6 +13,7 @@ services:
       - "127.0.0.1:8080:8080"   # only this machine (the tunnel or Caddy)
     volumes:
       - games_cache:/cache      # relayed R2 game files
+      - stats_data:/data        # daily visit counts
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
@@ -41,5 +42,6 @@ services:
 
 volumes:
   games_cache:
+  stats_data:
   caddy_data:
   caddy_config:

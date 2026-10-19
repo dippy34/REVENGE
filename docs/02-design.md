@@ -16,7 +16,7 @@ The site is called "Revenge" internally, but it should not be obvious.
 - Matrix-style falling-glyph or noise background on the menu, low opacity.
 - Glitch / text-scramble on headings and on hover.
 - Film grain and subtle scanlines overlay.
-- Custom cursor and a soft spotlight that follows the pointer.
+- Custom cursor (dot + ring). The soft spotlight that followed the pointer was removed on 2026-10-19 at the owner's request.
 - Smooth page transitions between sections.
 - Respect `prefers-reduced-motion`: effects calm down or turn off.
 

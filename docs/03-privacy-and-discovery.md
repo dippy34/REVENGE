@@ -1,10 +1,10 @@
 # 03 - Privacy and Discovery
 
-Honest framing: "no trace whatsoever" is not achievable. Hosts, registrars, and networks always keep some records. The goal is: collect nothing about visitors, keep nothing that identifies the builder, and stay out of search and discovery.
+Honest framing: "no trace whatsoever" is not achievable. Hosts, registrars, and networks always keep some records. The goal is: collect nothing that identifies visitors, keep nothing that identifies the builder, and stay out of search and discovery. Since 2026-10-19 the site counts visits on its own server: counts per day only, no cookies, no IP addresses, and visitors cannot be followed from day to day (details in `06-backend.md`).
 
 ## Architecture (nothing to leak)
 - Static files plus one proxy server (`server/`). No accounts, database, or server logs: Wisp logging and container logs are off, and Caddy keeps no access log.
-- Self-host fonts, scripts, and assets. No CDNs, analytics, ads, or social embeds.
+- Self-host fonts, scripts, and assets. No CDNs, third-party analytics, ads, or social embeds.
 - No cookies and no fingerprinting.
 - The menu makes no third-party requests at all.
 - The YouTube section has three exceptions, added when it became a feed (see `05-decisions.md`):

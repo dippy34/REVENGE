@@ -18,12 +18,12 @@ People who get the link by word of mouth. No marketing, no search presence, no a
 ### 2. Proxy (built last)
 - Deferred until YouTube is done and polished.
 - Scope is **not decided yet**. See open questions in `05-decisions.md`.
-- Anything built here must follow the same no-logging, no-tracking rules.
+- Anything built here must follow the same no-logging rules. The only tracking is the site's own anonymous visit counter (added 2026-10-19, see `05-decisions.md`).
 
 ## Build order
 Menu + theme first, then YouTube, then Proxy.
 
 ## Out of scope
 - User accounts, comments, chat, or anything that stores data about people.
-- Analytics of any kind.
+- Third-party analytics of any kind. (The site's own counter keeps counts only: see `06-backend.md`.)
 - Anything aimed at a specific person or group.

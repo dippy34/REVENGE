@@ -1,4 +1,4 @@
-/* fx.css: background canvas, grain, scanlines, spotlight, cursor, glitch,
+/* fx.css: background canvas, grain, scanlines, cursor, glitch,
    boot screen and page transitions. Pure decoration: removing this file
    leaves a working page. Reduced motion calms or switches all of it off. */
 
@@ -21,15 +21,6 @@
   z-index: 1;
   background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0, 0, 0, .78) 100%);
 }
-
-.fx-spot {
-  inset: 0;
-  z-index: 1;
-  opacity: 0;
-  background: radial-gradient(circle 300px at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .075), transparent 70%);
-  transition: opacity .5s;
-}
-html.has-pointer .fx-spot { opacity: 1; }
 
 /* the grain layer is oversized so it can jitter without showing edges */
 .fx-grain {

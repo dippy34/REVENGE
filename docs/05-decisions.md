@@ -7,7 +7,7 @@
 - Internal name is "Revenge"; the public-facing title is encoded or hinted, never plain.
 - YouTube plays through the no-cookie embed.
 - No `.onion` mirror.
-- Static site plus one proxy server (`server/`, Hetzner); no analytics, no logs.
+- Static site plus one proxy server (`server/`, Hetzner); no third-party analytics, no logs; an anonymous self-hosted visit counter since 2026-10-19.
 - Tab cloak, `about:blank` launcher, and panic key are included as optional visitor settings.
 - Effects: noise/matrix background, glitch text, grain, scanlines, custom cursor, boot sequence.
 
@@ -127,3 +127,10 @@
 - **Left out on purpose:** the AdSense script the old site injected into every game, and the 14 external proxy-launch entries. Static ad and analytics script tags in games are stripped.
 - **Isolation tradeoff:** the games pages are now cross-origin isolated (COEP `credentialless`) so Godot/threaded games run. Same-origin framing, accepted earlier so games can save progress, is unchanged.
 - **Duplicates (2026-10-19, owner's choice):** a game that is in both the R2 bucket and the gn-math list is shown once, as the gn-math version. The R2 copy is hidden (about 147 games), matched by name ignoring case and punctuation. This reverses the first version of the merge, which kept the R2 copy.
+
+### Visit counter and cursor glow (2026-10-19)
+- **Visit counter, at the owner's request:** this changes the earlier "no analytics" rule, so it is built to keep as little as possible. It counts unique visitors, visits, page views, which pages, which games are played, and which sites people came from. It runs on our own server (`server/stats.mjs`, `site/js/hit.js`), with no third party and no cookies, and IP addresses are never stored.
+  - **Unique visitors:** a keyed hash of IP + browser. The key is random, changes daily and is only kept in memory, so a visitor cannot be followed across days or turned back into an IP. If the server restarts mid-day, people seen before the restart may be counted twice that day.
+  - **Not recorded:** what is opened through the proxy, YouTube searches, video or channel ids (only the YouTube section: home, shorts...). Bots are skipped by user agent.
+  - **Viewing:** the private, unlinked page `/stats/` with a `STATS_KEY`.
+- **Cursor glow removed:** the white spotlight that followed the mouse (`.fx-spot`) is gone from every page. The dot-and-ring cursor stays.

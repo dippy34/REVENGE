@@ -211,6 +211,7 @@
 
   function play(g) {
     playing = g;
+    if (window.hit) window.hit.game(g.name);
     pname.textContent = g.name;
     psave.innerHTML = HEART;
     setSave(psave, isFav(g.id), g.name);

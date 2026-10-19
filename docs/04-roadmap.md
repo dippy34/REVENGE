@@ -7,7 +7,7 @@
 ## Phase 1 - Foundation + Menu (done 2026-10-18)
 - [x] Folder scaffold (`site/`, `tools/`). `tools/` only holds a README until Phase 4.
 - [x] Black/white theme, self-hosted monospace font (Geist Mono, OFL, 31 KB woff2).
-- [x] Landing menu: logo, clock, the name as a static SHA-256 digest (`631cb8a9`), plain menu words, boot sequence, effects (falling-glyph canvas, glitch, text scramble, grain, scanlines, cursor + spotlight, section transitions).
+- [x] Landing menu: logo, clock, the name as a static SHA-256 digest (`631cb8a9`), plain menu words, boot sequence, effects (falling-glyph canvas, glitch, text scramble, grain, scanlines, cursor, section transitions; the spotlight was later removed).
 - [x] noindex meta + `_headers` config, CSP (as a header and as a `<meta>` on every page).
 - [x] Games and Proxy shown as locked ("soon") entries.
 - **Done when:** menu loads with zero external requests, works on phone and desktop, honors reduced-motion.

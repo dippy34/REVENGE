@@ -55,6 +55,36 @@ Unity game makes (HTTP 429) and school filters block it.
 - **Not tested:** Safari (it does not support `credentialless`, so isolated games may
   fail there), and a real phone.
 
+## Visit counter (`/stats/`)
+
+`site/js/hit.js` (on every page except `/stats/`) sends one small message per page to
+`POST /api/p`: the page, the referring site's name, or the name of a game when one is
+opened. `server/stats.mjs` keeps only daily counts, in `STATS_DIR/stats.json` (kept
+400 days):
+
+| Number | Meaning |
+|---|---|
+| unique visitors | different visitors that day (keyed hash of IP + browser, key changes daily, memory only) |
+| visits | a new visit starts after 30 minutes without a page view |
+| page views | pages opened; YouTube counts its sections (home, shorts, subscriptions, library, watch...) |
+| games played | games opened, by name |
+| came from | the site name a visitor arrived from (`document.referrer` host) |
+| online now | visitors seen in the last 5 minutes (memory only) |
+
+- **Never recorded:** IP addresses, cookies or stored IDs, proxy destinations,
+  YouTube searches, video or channel ids.
+- **Skipped:** bots (by user agent) and more than 60 hits a minute from one visitor.
+  Unknown junk is capped (300 pages, 2000 games, 300 sources a day; the rest count as
+  "(other)").
+- **Time zone:** days start at midnight `STATS_TZ` (default `America/Chicago`).
+- **Viewing:** `https://631cb8a9.com/stats/` (not linked anywhere). It asks once for
+  the `STATS_KEY`, keeps it in that browser, and refreshes every 30 seconds. It shows
+  totals for today, 7, 30 or 90 days, a per-day chart, the top pages, games and
+  sources, and the latest 50 actions since the server started.
+- **The key** lives in `/etc/revenge.env` next to `ACCESS_KEY`. `setup-native.sh` keeps
+  it; pass `STATS_KEY=...` to change it, or `STATS_KEY=` to switch the page off (visits
+  are still counted).
+
 ## Safety settings (server.mjs)
 
 | Setting | Why |
@@ -97,7 +127,7 @@ Caddy as a system service. It leaves everything else alone:
   hardening (read-only system, no capabilities).
 - One site block for `$DOMAIN` is appended to `/etc/caddy/Caddyfile`. The file is
   backed up first, checked with `caddy validate`, and restored if the check fails.
-- The games cache lives in `/var/cache/revenge` (made by systemd, owned by `revenge`).
+- The games cache lives in `/var/cache/revenge`, and the visit counts in `/var/lib/revenge` (both made by systemd, owned by `revenge`).
 - The access key lives in `/etc/revenge.env` (root only). Pass `ACCESS_KEY=` (empty) to turn the lock off, or a value to change it. Leave it out to keep the saved one.
 - Changing `DOMAIN` (it can list several names, comma-separated) renames the existing site block instead of adding a second one.
 
