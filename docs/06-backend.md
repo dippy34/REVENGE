@@ -35,7 +35,7 @@ browser ──https──> Caddy (TLS) ──> server.mjs ──> site/ (static,
 
 ## Deploy on Hetzner
 
-1. Create a Hetzner Cloud server: Ubuntu 24.04, the smallest shared-CPU type is enough to start. Add your SSH key.
+1. Use an existing Hetzner server (Ubuntu or Debian) or create one; the smallest shared-CPU type is enough. The script stops if a port it needs (8080, plus 80/443 with a domain) is already in use, and asks before turning on the firewall.
 2. **Pick how it gets HTTPS** (the proxy needs HTTPS; service workers do not run without it):
    - **Your own domain:** add an `A` record pointing at the server's IPv4 address. Caddy gets the certificate on its own.
    - **Cloudflare Tunnel:** no domain records or open ports needed. Leave the domain empty in step 3, then point the tunnel at `http://localhost:8080`.
