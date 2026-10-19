@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https: blob: data:; style-src 'unsafe-inline' https: data:; img-src https: data: blob:; font-src https: data:; media-src https: data: blob:; connect-src https: data: blob:; worker-src blob: data:; frame-src https: data: blob:; object-src 'none'; base-uri https:">
+<title>~</title>
+<style>html,body{margin:0;height:100%;background:#000;color:#8f8f8f;font:13px ui-monospace,Menlo,Consolas,monospace}p{padding:16px}</style>
+<!-- Runs inside a sandboxed iframe (no allow-same-origin): the game gets an
+     opaque origin and cannot read this site's storage. Third-party game code
+     lives here, so this page has the loose CSP and nothing else does. -->
+<script>
+(function () {
+  'use strict';
+  // Opaque origins throw on storage access; give games an in-memory stand-in.
+  ['localStorage', 'sessionStorage'].forEach(function (k) {
+    try { void window[k].length; return; } catch (e) { /* blocked */ }
+    var m = {};
+    var s = {
+      getItem: function (a) { return Object.prototype.hasOwnProperty.call(m, a) ? m[a] : null; },
+      setItem: function (a, v) { m[a] = String(v); },
+      removeItem: function (a) { delete m[a]; },
+      clear: function () { m = {}; },
+      key: function (i) { return Object.keys(m)[i] || null; }
+    };
+    Object.defineProperty(s, 'length', { get: function () { return Object.keys(m).length; } });
+    try { Object.defineProperty(window, k, { value: s, configurable: true }); } catch (e) { /* ignore */ }
+  });
+
+  var f = decodeURIComponent(location.hash.slice(1));
+  var url = 'https://raw.githubusercontent.com/gn-math/html/main/';
+  if (!/^[A-Za-z0-9_.-]{1,80}\.html$/.test(f)) { document.write('<p>bad id</p>'); return; }
+
+  fetch(url + f).then(function (r) {
+    if (!r.ok) throw new Error(r.status);
+    return r.text();
+  }).then(function (html) {
+    // Drop the sidebar ad blocks that ship inside some of the ports.
+    html = html
+      .replace(/<div\s+id=["']sidebarad[12]["'][^>]*>[\s\S]*?<\/div>\s*(<\/div>)?/g, '')
+      .replace(/<script>\s*\(function\(_0x[a-f0-9]+[\s\S]*?duplace\.ne[\s\S]*?<\/script>/g, '');
+    document.open();
+    document.write(html);
+    document.close();
+  }).catch(function () {
+    document.body.innerHTML = '<p>could not load this game</p>';
+  });
+})();
+</script>
+</head>
+<body><p>loading</p></body>
+</html>

@@ -1,0 +1,108 @@
+/* games.css: the games section. Same tokens as base.css, black and white
+   interface; covers keep their own colour. */
+
+.g-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto minmax(120px, 420px) auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 12px var(--gutter);
+  background: rgba(0, 0, 0, .94);
+  border-bottom: 1px solid var(--line);
+}
+.g-logo { display: inline-flex; color: var(--fg); }
+.g-logo:hover { color: var(--hi); }
+.g-logo svg { width: 24px; height: 24px; }
+
+.g-search { border: 1px solid var(--line-2); transition: border-color .16s var(--ease); }
+.g-search:focus-within { border-color: var(--hi); }
+.g-search input {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--hi);
+  background: transparent;
+  border: 0;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.g-search input::placeholder { color: #6e6e6e; opacity: 1; }
+.g-search input::-webkit-search-cancel-button { display: none; }
+
+.g-fav, .g-btns button {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--line-2);
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+.g-fav:hover, .g-btns button:hover { color: var(--hi); border-color: var(--hi); }
+.g-fav[aria-pressed="true"] { color: var(--bg); background: var(--hi); border-color: var(--hi); }
+.g-count { justify-self: end; font-size: 12px; color: var(--dim); }
+
+.g-view { padding: 24px var(--gutter) 60px; outline: none; }
+.g-empty { color: var(--dim); font-size: 13px; }
+
+.g-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+}
+.g-card { position: relative; }
+.g-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  background: none;
+  border: 1px solid var(--line);
+  transition: border-color .16s var(--ease);
+}
+.g-open:hover, .g-open:focus-visible { border-color: var(--hi); }
+.g-cover { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: #0d0d0d; }
+.g-name {
+  display: block;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.g-star {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--dim);
+  background: rgba(0, 0, 0, .75);
+  border: 1px solid var(--line-2);
+}
+.g-star:hover, .g-star[aria-pressed="true"] { color: var(--hi); border-color: var(--hi); }
+
+.g-player { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; background: var(--bg); }
+.g-player[hidden] { display: none; }
+.g-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px var(--gutter); border-bottom: 1px solid var(--line); }
+.g-bar strong { font-weight: 500; font-size: 13px; color: var(--hi); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g-btns { display: flex; gap: 8px; flex: none; }
+#p-frame { flex: 1; width: 100%; border: 0; background: #000; }
+
+@media (max-width: 640px) {
+  .g-top { grid-template-columns: auto 1fr auto; }
+  .g-count { display: none; }
+}
+
+/* the grain and scanline overlays would sit on top of the game */
+.playing { overflow: hidden; }
+.playing .fx { display: none; }

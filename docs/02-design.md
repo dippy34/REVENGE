@@ -27,7 +27,7 @@ The site is called "Revenge" internally, but it should not be obvious.
 - Copy is terse and neutral. No usernames, no "welcome back".
 
 ## Menu
-Three entries: `YouTube`, `Games`, `Proxy`. Games shows as locked "soon". Keyboard navigable. Proxy shows as locked or "soon" until its phase.
+Three entries: `YouTube`, `Games`, `Proxy`. Games is live. Proxy stays locked "soon". Keyboard navigable.
 
 ## Quality bar
 - Fast: no framework, small payload, no external fonts.

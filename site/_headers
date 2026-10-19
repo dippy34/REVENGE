@@ -9,12 +9,104 @@
 #   www.youtube-nocookie.com    the player (frame)
 # frame-src also allows self, for the later about:blank launcher.
 
-/*
+# Each path gets exactly one CSP: headers from several matching rules are
+# appended, and two policies would both be enforced.
+#
+# games/ lists and covers come from raw.githubusercontent.com (connect, img).
+# games/play.html runs inside a sandboxed iframe with no allow-same-origin, so
+# the third-party game code in it has an opaque origin and cannot reach this
+# site's storage. It is the only page with a loose CSP, and it is not linked
+# or opened on its own.
+
+/
   Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src https://nova-hub.dev; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
+  Permissions-Policy: accelerometer=(), autoplay=(self "https://www.youtube-nocookie.com"), bluetooth=(), browsing-topics=(), camera=(), clipboard-read=(), clipboard-write=(), display-capture=(), encrypted-media=(self "https://www.youtube-nocookie.com"), fullscreen=(self "https://www.youtube-nocookie.com"), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(self "https://www.youtube-nocookie.com"), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()
   Referrer-Policy: no-referrer
   X-Robots-Tag: noindex, nofollow, noarchive
   Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/index.html
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src https://nova-hub.dev; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
   Permissions-Policy: accelerometer=(), autoplay=(self "https://www.youtube-nocookie.com"), bluetooth=(), browsing-topics=(), camera=(), clipboard-read=(), clipboard-write=(), display-capture=(), encrypted-media=(self "https://www.youtube-nocookie.com"), fullscreen=(self "https://www.youtube-nocookie.com"), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(self "https://www.youtube-nocookie.com"), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/youtube/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src https://nova-hub.dev; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
+  Permissions-Policy: accelerometer=(), autoplay=(self "https://www.youtube-nocookie.com"), bluetooth=(), browsing-topics=(), camera=(), clipboard-read=(), clipboard-write=(), display-capture=(), encrypted-media=(self "https://www.youtube-nocookie.com"), fullscreen=(self "https://www.youtube-nocookie.com"), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(self "https://www.youtube-nocookie.com"), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/games/
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://raw.githubusercontent.com; font-src 'self'; connect-src https://raw.githubusercontent.com; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
+  Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), clipboard-read=(), display-capture=(), geolocation=(), hid=(), idle-detection=(), local-fonts=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), serial=(), usb=(), xr-spatial-tracking=(), autoplay=*, fullscreen=*, gamepad=*, gyroscope=*, magnetometer=*, clipboard-write=*
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/games/index.html
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://raw.githubusercontent.com; font-src 'self'; connect-src https://raw.githubusercontent.com; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
+  Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), clipboard-read=(), display-capture=(), geolocation=(), hid=(), idle-detection=(), local-fonts=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), serial=(), usb=(), xr-spatial-tracking=(), autoplay=*, fullscreen=*, gamepad=*, gyroscope=*, magnetometer=*, clipboard-write=*
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/games/play.html
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https: blob: data:; style-src 'unsafe-inline' https: data:; img-src https: data: blob:; font-src https: data:; media-src https: data: blob:; connect-src https: data: blob:; worker-src blob: data:; frame-src https: data: blob:; object-src 'none'; base-uri https:; frame-ancestors 'self'
+  Permissions-Policy: accelerometer=(), bluetooth=(), browsing-topics=(), camera=(), clipboard-read=(), display-capture=(), geolocation=(), hid=(), idle-detection=(), local-fonts=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), serial=(), usb=(), xr-spatial-tracking=(), autoplay=*, fullscreen=*, gamepad=*, gyroscope=*, magnetometer=*, clipboard-write=*
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+# Static files: everything except the page-level CSP and permissions.
+/css/*
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/js/*
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/assets/*
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Cross-Origin-Opener-Policy: same-origin

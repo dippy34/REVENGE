@@ -1,7 +1,7 @@
 # 05 - Decisions, Open Questions, Limits
 
 ## Decided
-- Sections: YouTube and Proxy. Proxy is built last. Games appears on the menu as locked ("soon").
+- Sections: YouTube and Proxy. Proxy is built last. Games went live on 2026-10-19 (see below); Proxy still shows as locked ("soon").
 - Build the menu and YouTube first.
 - Black and white theme only.
 - Internal name is "Revenge"; the public-facing title is encoded or hinted, never plain.
@@ -100,3 +100,14 @@
   - while browsing, via thumbnails from `i.ytimg.com`
   - once a video plays, via the embed, which also learns the site's origin
   - The embed may set its own storage on `youtube-nocookie.com`. This site still sets no cookies.
+
+### Games (2026-10-19)
+- **Source:** the same catalogue the ghostlinkhub site uses, which is the `gn-math` repos (`assets/zones.json`, `html`, `covers`).
+  - jsDelivr now blocks `gn-math`, so everything is fetched from `raw.githubusercontent.com` (CORS `*`) instead.
+  - No game files are stored in this repo. The only new third-party host on our own pages is `raw.githubusercontent.com` (connect + img).
+- **UI:** a grid with search, a "saved" filter (stars, kept in `localStorage` key `g-favs`), lazy covers, and a fullscreen player. Covers keep their colour. The discord "suggest games" entry is dropped.
+- **Isolation:** a game runs in `games/play.html` inside an iframe with `sandbox` and no `allow-same-origin`.
+  - The game gets an opaque origin, so it cannot read this site's storage (the YouTube profile).
+  - `play.html` shims `localStorage` / `sessionStorage` in memory, because a sandboxed page throws on them. Game saves therefore do not persist.
+  - `play.html` is the only page with a loose CSP (games need inline scripts, eval and arbitrary https assets). `_headers` is split per path so each page gets exactly one CSP.
+- **Known limits:** the games are third-party code and some call out to ad or analytics hosts, so the no-tracking promise covers our pages, not the games. Some ports may not run (a few need `allow-same-origin` or a GPU).

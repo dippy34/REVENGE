@@ -1,9 +1,9 @@
 # Project: Revenge (working title)
 
-A private, static, no-tracking site: **YouTube** now, **Proxy** later, and **Games** shown on the menu as "soon".
+A private, static, no-tracking site: **YouTube** and **Games** now, **Proxy** later (shown on the menu as "soon").
 Black-and-white, high-effects, "anonymous" feel. Shared by word of mouth and direct URL only.
 
-> Status: **Phases 1-2 built** (menu, theme, effects, YouTube feed). The settings panel and Proxy are next. Build order is in `docs/04-roadmap.md`.
+> Status: **Phases 1-2 built** (menu, theme, effects, YouTube feed) plus a **Games** section. The settings panel and Proxy are next. Build order is in `docs/04-roadmap.md`.
 
 ## Doc index
 
@@ -26,6 +26,7 @@ Revenge/
     css/                theme + effects
     js/                 menu, effects, cloak tools, panic key
     youtube/            YouTube feed (no-cookie player)
+    games/              game grid + sandboxed player page
     proxy/              last phase
     assets/             self-hosted fonts, icons (metadata stripped)
   tools/                build + leak-check scripts (strip metadata, scan for external requests)

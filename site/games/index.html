@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-page="games">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://raw.githubusercontent.com; font-src 'self'; connect-src https://raw.githubusercontent.com; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'">
+<meta name="color-scheme" content="dark">
+<title>~/g</title>
+<link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/fx.css">
+<link rel="stylesheet" href="../css/games.css">
+<script src="../js/early.js"></script>
+<script src="../js/fx.js" defer></script>
+<script src="../js/games.js" defer></script>
+</head>
+<body>
+<div class="fx fx-spot" aria-hidden="true"></div>
+
+<header class="g-top">
+  <a class="g-logo" href="../" aria-label="back to menu">
+    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+  </a>
+  <form class="g-search" id="g-search" role="search" autocomplete="off">
+    <label class="sr" for="g-q">search games</label>
+    <input id="g-q" type="search" maxlength="100" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="search games">
+  </form>
+  <button class="g-fav" id="g-fav" type="button" aria-pressed="false">saved</button>
+  <span class="g-count" id="g-count" aria-live="polite"></span>
+</header>
+
+<main class="g-view" id="view" tabindex="-1"><p class="g-empty">loading</p></main>
+
+<div class="g-player" id="player" hidden>
+  <div class="g-bar">
+    <strong id="p-name"></strong>
+    <span class="g-btns">
+      <button type="button" id="p-full">fullscreen</button>
+      <button type="button" id="p-close">close</button>
+    </span>
+  </div>
+  <iframe id="p-frame" title="game" sandbox="allow-scripts allow-pointer-lock allow-forms allow-popups" allow="fullscreen; gamepad; autoplay"></iframe>
+</div>
+<noscript><p class="g-empty">This page needs JavaScript.</p></noscript>
+
+<div class="fx fx-grain" aria-hidden="true"></div>
+<div class="fx fx-scan" aria-hidden="true"></div>
+</body>
+</html>
