@@ -149,5 +149,10 @@ source still has to be offered to the people who use the proxy.
   gives 403 without the key and 101 with it. In headless Chromium, example.com,
   a Wikipedia article and a DuckDuckGo search all loaded through the proxy with
   no console errors.
+- **R2 games (same day):** live at `https://631cb8a9.com`. All 425 game pages and
+  covers came through the relay with no failures (checked locally against the real
+  bucket). On the live domain, a plain HTML game, a Flash game (Ruffle), a Unity game
+  and Karlson (Godot, needs cross-origin isolation) all started, and the other pages
+  and the proxy still load with no console errors.
 - **Not verified:** the Docker/Caddy path (`setup.sh`) on a real server, the
   Cloudflare Tunnel path, Safari, Firefox and phones.
