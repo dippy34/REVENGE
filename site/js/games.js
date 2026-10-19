@@ -107,12 +107,13 @@
       .catch(function () { return []; });
   }
 
-  // Same game in both sources: keep ours, it does not depend on GitHub.
+  // Same game in both sources: keep the gn-math version, hide our R2 copy.
+  // If the catalog did not load, every R2 game shows.
   function merge(own, catalog) {
     var seen = {};
     var key = function (n) { return n.toLowerCase().replace(/[^a-z0-9]/g, ''); };
-    own.forEach(function (g) { seen[key(g.name)] = 1; });
-    var all = own.concat(catalog.filter(function (g) { return !seen[key(g.name)]; }));
+    catalog.forEach(function (g) { seen[key(g.name)] = 1; });
+    var all = catalog.concat(own.filter(function (g) { return !seen[key(g.name)]; }));
     all.sort(function (a, b) { return (b.hot - a.hot) || a.name.localeCompare(b.name); });
     return all;
   }

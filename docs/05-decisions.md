@@ -126,3 +126,4 @@
 - **Not linked straight to `r2.dev`:** the old site learned that r2.dev rate-limits Unity games and gets blocked on school networks. Going through our server also keeps the address bar on our domain.
 - **Left out on purpose:** the AdSense script the old site injected into every game, and the 14 external proxy-launch entries. Static ad and analytics script tags in games are stripped.
 - **Isolation tradeoff:** the games pages are now cross-origin isolated (COEP `credentialless`) so Godot/threaded games run. Same-origin framing, accepted earlier so games can save progress, is unchanged.
+- **Duplicates (2026-10-19, owner's choice):** a game that is in both the R2 bucket and the gn-math list is shown once, as the gn-math version. The R2 copy is hidden (about 147 games), matched by name ignoring case and punctuation. This reverses the first version of the merge, which kept the R2 copy.

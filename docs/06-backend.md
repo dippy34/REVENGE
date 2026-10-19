@@ -31,7 +31,10 @@ Unity game makes (HTTP 429) and school filters block it.
 
 - **List:** `site/games/semag.json` (name, folder, cover file), taken from the old
   nova-hub catalog. The games page merges it with the gn-math list; a game in both
-  keeps the R2 copy. If one source fails to load, the other still shows.
+  shows the gn-math version and the R2 copy is hidden (the owner's choice, 2026-10-19;
+  about 147 games are in both, matched by name ignoring case and punctuation). If one
+  source fails to load, the other still shows, so the R2 copies appear if the gn-math
+  list is unreachable.
 - **Relay:** the upstream host is fixed (`R2_BASE`) and the path is validated, so it
   cannot be pointed elsewhere. Files are relayed byte for byte, so `.br` / `.gz`
   builds keep working, and cached on disk (`CACHE_DIR`, capped by `CACHE_MAX_MB`,
