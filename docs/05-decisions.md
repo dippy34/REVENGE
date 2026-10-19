@@ -120,3 +120,9 @@
 - **Access key turned off (2026-10-19, owner's call):** the live proxy is open to anyone with the URL. Accepted risk: if the URL spreads, strangers can use the server, and abuse reports go to the Hetzner account. Turn the key back on with `ACCESS_KEY=<key>` on the next `setup-native.sh` run.
 - **Search** in the address bar goes to DuckDuckGo.
 - Full design, deploy steps and test results are in `06-backend.md`.
+
+### R2 games (2026-10-19)
+- **Added at the owner's request:** about 425 games from the owner's R2 bucket, listed from the old nova-hub catalog (`data/games.json`, `source: "semag"`). Played from `/semag/` on our own server, which relays and caches the bucket (see `06-backend.md`).
+- **Not linked straight to `r2.dev`:** the old site learned that r2.dev rate-limits Unity games and gets blocked on school networks. Going through our server also keeps the address bar on our domain.
+- **Left out on purpose:** the AdSense script the old site injected into every game, and the 14 external proxy-launch entries. Static ad and analytics script tags in games are stripped.
+- **Isolation tradeoff:** the games pages are now cross-origin isolated (COEP `credentialless`) so Godot/threaded games run. Same-origin framing, accepted earlier so games can save progress, is unchanged.

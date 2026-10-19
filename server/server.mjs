@@ -4,12 +4,17 @@
 //                  (exact versions from package.json, never fetched at runtime)
 //   /proxy/sw.js   the service worker that routes proxied requests
 //   /proxy/wisp/   Wisp over WebSocket: the only part that reaches the web
+//   /semag/*       the R2 games, relayed and cached on disk (see semag.mjs)
+//   /vendor/ruffle Ruffle (Flash emulator), from its pinned npm package
 //
 // Nothing is logged: no access log, and Wisp's own logging is switched off.
 //
 // Env:
 //   PORT (8080)  HOST (127.0.0.1)  SITE_DIR (../site)
 //   ACCESS_KEY   if set, the proxy only accepts connections that present it
+//   R2_BASE      public address of the games bucket (default: the owner's)
+//   CACHE_DIR    where relayed game files are kept (default ./.cache)
+//   CACHE_MAX_MB size cap for that cache (default 4096)
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,6 +22,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { server as wisp, logging } from '@mercuryworkshop/wisp-js/server';
 import { loadHeaders, headersFor } from './headers.mjs';
+import { createSemag } from './semag.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -24,8 +30,22 @@ const PORT = Number(process.env.PORT || 8080);
 const HOST = process.env.HOST || '127.0.0.1';
 const SITE = path.resolve(process.env.SITE_DIR || path.join(here, '..', 'site'));
 const KEY = process.env.ACCESS_KEY || '';
+const R2_BASE = process.env.R2_BASE || 'https://pub-31ddb721e92142be8b2deee228c36013.r2.dev';
+const CACHE_DIR = path.resolve(process.env.CACHE_DIR || path.join(here, '.cache'));
+const CACHE_MAX = Math.max(64, Number(process.env.CACHE_MAX_MB || 4096)) * 1024 * 1024;
 
 const rules = loadHeaders(path.join(SITE, '_headers'));
+
+const semag = createSemag({
+  base: R2_BASE,
+  cacheDir: path.join(CACHE_DIR, 'semag'),
+  maxBytes: CACHE_MAX,
+  headersFor: (p) => headersFor(rules, p)
+});
+
+// Ruffle: only the files that exist in the package, by exact name
+const RUFFLE_DIR = path.join(here, 'node_modules', '@ruffle-rs', 'ruffle');
+const RUFFLE_FILES = new Set(fs.readdirSync(RUFFLE_DIR).filter((f) => /^[\w.-]+\.(js|wasm)$/.test(f)));
 
 /* ---------- wisp ---------- */
 
@@ -146,7 +166,16 @@ const server = http.createServer((req, res) => {
     return send(res, 200, {
       'content-type': 'application/json',
       'cache-control': 'no-store'
-    }, JSON.stringify({ key: !!KEY }));
+    }, JSON.stringify({ key: !!KEY, semag: true }));
+  }
+  if (urlPath.startsWith('/semag/')) return semag.handle(req, res);
+  if (urlPath.startsWith('/vendor/ruffle/')) {
+    const name = urlPath.slice('/vendor/ruffle/'.length);
+    if (!RUFFLE_FILES.has(name)) return notFound(req, res);
+    return sendFile(req, res, path.join(RUFFLE_DIR, name), Object.assign({
+      'cache-control': 'public, max-age=86400',
+      'x-content-type-options': 'nosniff'
+    }, headersFor(rules, urlPath)));
   }
 
   // "/games" -> "/games/" so relative links on the page resolve

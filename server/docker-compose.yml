@@ -11,6 +11,8 @@ services:
     env_file: .env
     ports:
       - "127.0.0.1:8080:8080"   # only this machine (the tunnel or Caddy)
+    volumes:
+      - games_cache:/cache      # relayed R2 game files
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
@@ -38,5 +40,6 @@ services:
         max-file: "1"
 
 volumes:
+  games_cache:
   caddy_data:
   caddy_config:

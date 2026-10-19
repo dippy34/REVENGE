@@ -51,7 +51,7 @@
   Cross-Origin-Resource-Policy: same-origin
 
 /games/
-  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://raw.githubusercontent.com; font-src 'self'; connect-src https://raw.githubusercontent.com; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://raw.githubusercontent.com; font-src 'self'; connect-src 'self' https://raw.githubusercontent.com; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
   Permissions-Policy: accelerometer=(), browsing-topics=(), camera=(), clipboard-read=(), display-capture=(), geolocation=(), hid=(), idle-detection=(), local-fonts=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), serial=(), usb=(), xr-spatial-tracking=(), autoplay=*, fullscreen=*, gamepad=*, gyroscope=*, magnetometer=*, clipboard-write=*
   Referrer-Policy: no-referrer
   X-Robots-Tag: noindex, nofollow, noarchive
@@ -60,9 +60,10 @@
   X-Frame-Options: SAMEORIGIN
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
 
 /games/index.html
-  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://raw.githubusercontent.com; font-src 'self'; connect-src https://raw.githubusercontent.com; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://raw.githubusercontent.com; font-src 'self'; connect-src 'self' https://raw.githubusercontent.com; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
   Permissions-Policy: accelerometer=(), browsing-topics=(), camera=(), clipboard-read=(), display-capture=(), geolocation=(), hid=(), idle-detection=(), local-fonts=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), serial=(), usb=(), xr-spatial-tracking=(), autoplay=*, fullscreen=*, gamepad=*, gyroscope=*, magnetometer=*, clipboard-write=*
   Referrer-Policy: no-referrer
   X-Robots-Tag: noindex, nofollow, noarchive
@@ -71,6 +72,7 @@
   X-Frame-Options: SAMEORIGIN
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
 
 /games/play.html
   Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https: blob: data:; style-src 'unsafe-inline' https: data:; img-src https: data: blob:; font-src https: data:; media-src https: data: blob:; connect-src https: data: blob:; worker-src blob: data:; frame-src https: data: blob:; object-src 'none'; base-uri https:; frame-ancestors 'self'
@@ -82,6 +84,7 @@
   X-Frame-Options: SAMEORIGIN
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
 
 
 # proxy/ runs only on server/ (it needs the service worker, Scramjet files
@@ -101,6 +104,34 @@
 /proxy/index.html
   Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' data:; media-src 'none'; object-src 'none'; worker-src 'self'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
   Permissions-Policy: accelerometer=(), browsing-topics=(), camera=(self), display-capture=(), geolocation=(), hid=(), idle-detection=(), local-fonts=(), microphone=(self), midi=(), payment=(), publickey-credentials-get=(), serial=(), usb=(), xr-spatial-tracking=(), autoplay=(self), fullscreen=(self), clipboard-read=(self), clipboard-write=(self), encrypted-media=(self), picture-in-picture=(self)
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+# COEP "credentialless" on games/ and semag/ makes the page cross-origin isolated,
+# which Godot and threaded Unity games need (SharedArrayBuffer). Cross-origin
+# images and scripts still load; they are just fetched without cookies.
+#
+# semag/ is the R2 games, relayed by server.mjs (semag.mjs). Like games/play.html
+# it runs third-party game code, so it gets the loose CSP; it is framed only by
+# games/index.html. vendor/ is Ruffle, loaded by the Flash games.
+/semag/*
+  Content-Security-Policy: default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https:; style-src 'self' 'unsafe-inline' https: data:; img-src 'self' https: data: blob:; font-src 'self' https: data:; media-src 'self' https: data: blob:; connect-src 'self' https: data: blob: wss:; worker-src 'self' blob: data:; frame-src 'self' https: data: blob:; object-src 'none'; base-uri 'self' https:; frame-ancestors 'self'
+  Permissions-Policy: accelerometer=(self), browsing-topics=(), camera=(), clipboard-read=(), display-capture=(), geolocation=(), hid=(), idle-detection=(), local-fonts=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), serial=(), usb=(), xr-spatial-tracking=(), autoplay=(self), fullscreen=(self), gamepad=(self), gyroscope=(self), magnetometer=(self), clipboard-write=(self)
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
+
+/vendor/*
   Referrer-Policy: no-referrer
   X-Robots-Tag: noindex, nofollow, noarchive
   Strict-Transport-Security: max-age=63072000; includeSubDomains

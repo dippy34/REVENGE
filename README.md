@@ -27,10 +27,10 @@ Revenge/
     css/                theme + effects
     js/                 menu, effects, cloak tools, panic key
     youtube/            YouTube feed (no-cookie player)
-    games/              game grid + sandboxed player page
+    games/              game grid, player page, semag.json (the R2 game list)
     proxy/              proxy shell (needs server/)
     assets/             self-hosted fonts, icons (metadata stripped)
-  server/               Node server for the site + Scramjet proxy, Docker, Caddy, setup.sh
+  server/               Node server: site, Scramjet proxy, R2 games relay (semag.mjs); Docker, Caddy, setup scripts
   tools/                build + leak-check scripts (strip metadata, scan for external requests)
 ```
 

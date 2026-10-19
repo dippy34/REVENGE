@@ -40,7 +40,9 @@
     // Drop the sidebar ad blocks that ship inside some of the ports.
     html = html
       .replace(/<div\s+id=["']sidebarad[12]["'][^>]*>[\s\S]*?<\/div>\s*(<\/div>)?/g, '')
-      .replace(/<script>\s*\(function\(_0x[a-f0-9]+[\s\S]*?duplace\.ne[\s\S]*?<\/script>/g, '');
+      .replace(/<script>\s*\(function\(_0x[a-f0-9]+[\s\S]*?duplace\.ne[\s\S]*?<\/script>/g, '')
+      // ad and analytics loaders
+      .replace(/<script\b[^>]*\bsrc=["'](?:https?:)?\/\/[^"']*(?:googlesyndication|googletagmanager|google-analytics|doubleclick|adsbygoogle)[^"']*["'][^>]*>\s*<\/script>/gi, '');
     document.open();
     document.write(html);
     document.close();

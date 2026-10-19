@@ -1,6 +1,9 @@
-/* games.js: the games grid. The list and covers come from GitHub raw, the
-   game itself is loaded inside games/play.html. Saved games live in
-   localStorage on this device only. */
+/* games.js: the games grid. Two sources are merged:
+   - our own games from the R2 bucket: games/semag.json lists them, and the
+     server relays them under /semag/ (only on the main server)
+   - the gn-math catalog: list and covers from GitHub raw, loaded inside
+     games/play.html
+   Saved games live in localStorage on this device only. */
 (function () {
   'use strict';
 
@@ -57,10 +60,61 @@
       if (typeof z.cover !== 'string' || z.cover.indexOf('{COVER_URL}/') !== 0) return;
       var cover = z.cover.slice('{COVER_URL}/'.length);
       if (!/^[A-Za-z0-9_.-]{1,80}$/.test(cover)) return;
-      out.push({ id: z.id, name: z.name.slice(0, 120), file: file, cover: COVERS + '/' + cover, hot: z.featured === true });
+      out.push({ id: z.id, name: z.name.slice(0, 120), src: 'play.html#' + encodeURIComponent(file), cover: COVERS + '/' + cover, hot: z.featured === true });
     });
-    out.sort(function (a, b) { return (b.hot - a.hot) || a.name.localeCompare(b.name); });
     return out;
+  }
+
+  // A path inside a game's folder, e.g. "img/icon.png": clean segments only
+  function okPath(p) {
+    if (p.length > 160) return false;
+    return p.split('/').every(function (s) {
+      return s && s !== '.' && s !== '..' && !/[\\\u0000-\u001f]/.test(s);
+    });
+  }
+
+  // Our own games. Only offered when the main server is there to relay them.
+  function loadOwn() {
+    return fetch('/proxy/config.json', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('static host'); return r.json(); })
+      .then(function (cfg) {
+        if (!cfg.semag) throw new Error('no relay');
+        return fetch('semag.json');
+      })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (list) {
+        var out = [];
+        list.forEach(function (z) {
+          if (!z || typeof z.n !== 'string' || typeof z.d !== 'string' || typeof z.i !== 'string') return;
+          if (!/^[A-Za-z0-9._-]{1,80}$/.test(z.d) || !okPath(z.i)) return;
+          out.push({
+            id: 's:' + z.d,
+            name: z.n.slice(0, 120),
+            src: '/semag/' + z.d + '/index.html',
+            cover: '/semag/' + z.d + '/' + z.i.split('/').map(encodeURIComponent).join('/'),
+            hot: false
+          });
+        });
+        return out;
+      })
+      .catch(function () { return []; });
+  }
+
+  function loadCatalog() {
+    return fetch(LIST, { referrerPolicy: 'no-referrer', credentials: 'omit' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(clean)
+      .catch(function () { return []; });
+  }
+
+  // Same game in both sources: keep ours, it does not depend on GitHub.
+  function merge(own, catalog) {
+    var seen = {};
+    var key = function (n) { return n.toLowerCase().replace(/[^a-z0-9]/g, ''); };
+    own.forEach(function (g) { seen[key(g.name)] = 1; });
+    var all = own.concat(catalog.filter(function (g) { return !seen[key(g.name)]; }));
+    all.sort(function (a, b) { return (b.hot - a.hot) || a.name.localeCompare(b.name); });
+    return all;
   }
 
   // Mix tile sizes in the full list; search results and saved stay uniform.
@@ -159,7 +213,7 @@
     pname.textContent = g.name;
     psave.innerHTML = HEART;
     setSave(psave, isFav(g.id), g.name);
-    frame.src = 'play.html#' + encodeURIComponent(g.file);
+    frame.src = g.src;
     player.hidden = false;
     document.documentElement.classList.add('playing');
     document.getElementById('p-close').focus();
@@ -191,26 +245,23 @@
   favN.textContent = favs.length || '';
 
   function load() {
-    fetch(LIST, { referrerPolicy: 'no-referrer', credentials: 'omit' })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(function (list) {
-        games = clean(list);
-        if (!games.length) throw new Error('empty');
-        refresh();
-      })
-      .catch(function () {
-        view.textContent = '';
-        var p = document.createElement('p');
-        p.className = 'g-empty';
-        p.textContent = 'could not load the game list. ';
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'g-more';
-        b.textContent = 'try again';
-        b.addEventListener('click', function () { view.textContent = ''; load(); });
-        p.appendChild(b);
-        view.appendChild(p);
-      });
+    Promise.all([loadOwn(), loadCatalog()]).then(function (lists) {
+      games = merge(lists[0], lists[1]);
+      if (!games.length) throw new Error('empty');
+      refresh();
+    }).catch(function () {
+      view.textContent = '';
+      var p = document.createElement('p');
+      p.className = 'g-empty';
+      p.textContent = 'could not load the game list. ';
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'g-more';
+      b.textContent = 'try again';
+      b.addEventListener('click', function () { view.textContent = ''; load(); });
+      p.appendChild(b);
+      view.appendChild(p);
+    });
   }
   load();
 })();

@@ -22,6 +22,36 @@ browser ──https──> Caddy (TLS) ──> server.mjs ──> site/ (static,
   Upstream's `proxy-bootstrap` package is not used, because it downloads
   "latest" from npm every time it starts.
 
+## The R2 games (`/semag/`)
+
+About 425 more games live in a Cloudflare R2 bucket (`semag/<game>/index.html` plus
+its files). `server/semag.mjs` serves them from this origin instead of linking to the
+bucket's `r2.dev` address, because `r2.dev` rate-limits the burst of requests a
+Unity game makes (HTTP 429) and school filters block it.
+
+- **List:** `site/games/semag.json` (name, folder, cover file), taken from the old
+  nova-hub catalog. The games page merges it with the gn-math list; a game in both
+  keeps the R2 copy. If one source fails to load, the other still shows.
+- **Relay:** the upstream host is fixed (`R2_BASE`) and the path is validated, so it
+  cannot be pointed elsewhere. Files are relayed byte for byte, so `.br` / `.gz`
+  builds keep working, and cached on disk (`CACHE_DIR`, capped by `CACHE_MAX_MB`,
+  default 4 GB, oldest evicted first). At most 8 requests go to the bucket at once,
+  with retries on 429 and 5xx. Range requests are answered from the cache or passed
+  through.
+- **Page patches** (at serve time, the cache keeps the original): Ruffle is loaded
+  from `/vendor/ruffle/` instead of `unpkg.com` (138 Flash games; Ruffle 0.7.1 is a
+  pinned npm dependency), anti-framing code is removed (6 games), and static ad and
+  analytics `<script>` tags are removed. The ad script the old site injected is not
+  added. Games can still load their own ads at runtime.
+- **Headers:** `/semag/*` has the loose CSP that game code needs, and the games pages
+  plus `/semag/*` send `Cross-Origin-Embedder-Policy: credentialless`, which makes
+  them cross-origin isolated. Godot and threaded Unity games need that
+  (`SharedArrayBuffer`); Karlson did not start without it.
+- **Mirror:** GitHub Pages has no relay, so there the R2 games are hidden and only
+  the gn-math games show. The page decides by asking `/proxy/config.json`.
+- **Not tested:** Safari (it does not support `credentialless`, so isolated games may
+  fail there), and a real phone.
+
 ## Safety settings (server.mjs)
 
 | Setting | Why |
@@ -51,6 +81,9 @@ browser ──https──> Caddy (TLS) ──> server.mjs ──> site/ (static,
 
 To change the key: edit `/opt/revenge/server/.env`, then `docker compose up -d` in `/opt/revenge/server`. Visitors are asked for the new key next time.
 
+Check on the server: `ls /var/cache/revenge` (native) or the `games_cache` volume
+(Docker). To clear the cache, stop the service and delete that folder.
+
 ## Adding to a server that already runs Caddy (no Docker)
 
 `server/setup-native.sh` is for a server that already serves other sites through
@@ -61,6 +94,7 @@ Caddy as a system service. It leaves everything else alone:
   hardening (read-only system, no capabilities).
 - One site block for `$DOMAIN` is appended to `/etc/caddy/Caddyfile`. The file is
   backed up first, checked with `caddy validate`, and restored if the check fails.
+- The games cache lives in `/var/cache/revenge` (made by systemd, owned by `revenge`).
 - The access key lives in `/etc/revenge.env` (root only). Pass `ACCESS_KEY=` (empty) to turn the lock off, or a value to change it. Leave it out to keep the saved one.
 - Changing `DOMAIN` (it can list several names, comma-separated) renames the existing site block instead of adding a second one.
 

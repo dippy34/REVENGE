@@ -57,14 +57,18 @@ Wants=network-online.target
 User=revenge
 WorkingDirectory=$DIR/server
 EnvironmentFile=$ENVF
-Environment=HOST=127.0.0.1 PORT=$PORT NODE_ENV=production
+Environment=HOST=127.0.0.1 PORT=$PORT NODE_ENV=production CACHE_DIR=/var/cache/revenge
+# game files relayed from the R2 bucket are cached here (size capped by CACHE_MAX_MB)
+CacheDirectory=revenge
+CacheDirectoryMode=0750
 ExecStart=$(command -v node) server.mjs
 Restart=always
 RestartSec=2
 # no logs, by design
 StandardOutput=null
 StandardError=null
-# hardening: read-only system, no privileges, network + unix sockets only
+# hardening: read-only system (except the cache above), no privileges,
+# network + unix sockets only
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
