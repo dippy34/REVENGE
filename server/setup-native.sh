@@ -37,11 +37,14 @@ if [ -d "$DIR/.git" ]; then git -C "$DIR" pull -q --ff-only; else git clone -q -
 (cd "$DIR/server" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund --loglevel=error)
 
 echo "> settings"
-if [ ! -f "$ENVF" ]; then
-  key="${ACCESS_KEY:-$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)}"
-  printf 'ACCESS_KEY=%s\n' "$key" > "$ENVF"
-  chmod 600 "$ENVF"
+# ACCESS_KEY set (even to empty) replaces the saved one; empty means no key.
+# Unset keeps the saved key, or makes a new one on first install.
+if [ -n "${ACCESS_KEY+x}" ]; then
+  printf 'ACCESS_KEY=%s\n' "$ACCESS_KEY" > "$ENVF"
+elif [ ! -f "$ENVF" ]; then
+  printf 'ACCESS_KEY=%s\n' "$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20)" > "$ENVF"
 fi
+chmod 600 "$ENVF"
 
 echo "> service"
 cat > "$UNIT" <<EOF
@@ -82,15 +85,21 @@ systemctl enable -q revenge
 systemctl restart revenge
 
 echo "> caddy"
-if grep -qF "$MARK" "$CADDYFILE"; then
-  echo "  site block already present, left as is"
+# DOMAIN may list several names: "a.example, www.a.example"
+current="$(grep -A1 -F "$MARK" "$CADDYFILE" | tail -n +2 | sed 's/ *{$//' || true)"
+if [ "$current" = "$DOMAIN" ]; then
+  echo "  site block for $DOMAIN already present"
 else
   bak="$CADDYFILE.bak-revenge-$(date +%Y%m%d-%H%M%S)"
   cp -p "$CADDYFILE" "$bak"
-  printf '\n%s (added by server/setup-native.sh)\n%s {\n\tencode zstd gzip\n\treverse_proxy 127.0.0.1:%s\n}\n' "$MARK" "$DOMAIN" "$PORT" >> "$CADDYFILE"
+  if [ -n "$current" ]; then
+    sed -i "/^$MARK/{n;s/^.* {\$/$DOMAIN {/}" "$CADDYFILE"   # rename the block's hosts
+  else
+    printf '\n%s (added by server/setup-native.sh)\n%s {\n\tencode zstd gzip\n\treverse_proxy 127.0.0.1:%s\n}\n' "$MARK" "$DOMAIN" "$PORT" >> "$CADDYFILE"
+  fi
   if caddy validate --config "$CADDYFILE" --adapter caddyfile >/dev/null 2>&1; then
     systemctl reload caddy
-    echo "  added $DOMAIN (backup: $bak)"
+    echo "  site block now serves $DOMAIN (backup: $bak)"
   else
     cp -p "$bak" "$CADDYFILE"
     echo "  new Caddyfile did not validate; restored the backup, nothing changed" >&2
@@ -106,4 +115,5 @@ for i in $(seq 1 20); do
 done
 if [ "$code" != "200" ]; then echo "app did not answer on port $PORT (got $code)" >&2; exit 1; fi
 echo "> done: https://$DOMAIN"
-echo "  proxy access key: $(cut -d= -f2- "$ENVF")"
+key="$(cut -d= -f2- "$ENVF")"
+echo "  proxy access key: ${key:-none (open)}"

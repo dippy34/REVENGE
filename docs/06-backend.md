@@ -61,7 +61,8 @@ Caddy as a system service. It leaves everything else alone:
   hardening (read-only system, no capabilities).
 - One site block for `$DOMAIN` is appended to `/etc/caddy/Caddyfile`. The file is
   backed up first, checked with `caddy validate`, and restored if the check fails.
-- The access key lives in `/etc/revenge.env` (root only).
+- The access key lives in `/etc/revenge.env` (root only). Pass `ACCESS_KEY=` (empty) to turn the lock off, or a value to change it. Leave it out to keep the saved one.
+- Changing `DOMAIN` (it can list several names, comma-separated) renames the existing site block instead of adding a second one.
 
 ```sh
 DOMAIN=631cb8a9.157-180-67-116.sslip.io ACCESS_KEY=... bash /opt/revenge/server/setup-native.sh
