@@ -34,8 +34,11 @@ REPO="${REPO:-https://github.com/dippy34/REVENGE.git}"
 DIR="${DIR:-/opt/revenge}"
 
 echo "> installing docker and git"
-apt-get update -qq
-apt-get install -y -qq docker.io docker-compose-v2 docker-buildx git ufw openssl curl >/dev/null
+# a new server runs its own updates on first boot; wait for apt instead of failing
+export DEBIAN_FRONTEND=noninteractive
+aptw() { apt-get -o DPkg::Lock::Timeout=600 "$@"; }
+aptw update -qq
+aptw install -y -qq docker.io docker-compose-v2 docker-buildx git ufw openssl curl >/dev/null
 systemctl enable --now docker >/dev/null
 
 echo "> getting the code"

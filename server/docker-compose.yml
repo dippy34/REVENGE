@@ -18,7 +18,7 @@ services:
       driver: none              # no logs, by design
 
   caddy:
-    image: caddy:2-alpine
+    image: mirror.gcr.io/library/caddy:2-alpine   # Docker Hub via Google's mirror
     profiles: ["caddy"]
     restart: unless-stopped
     depends_on: [app]

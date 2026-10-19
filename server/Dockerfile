@@ -1,5 +1,6 @@
 # Build from the repo root:  docker compose -f server/docker-compose.yml build
-FROM node:22-alpine
+# Google's mirror of Docker Hub: Hub often rate-limits shared cloud IPs
+FROM mirror.gcr.io/library/node:22-alpine
 
 WORKDIR /app/server
 COPY server/package.json server/package-lock.json ./
