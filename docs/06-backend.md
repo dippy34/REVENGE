@@ -66,6 +66,12 @@ GitHub raw instead does not work: those responses are `text/plain` with
 `server/jsgh.mjs` is the same kind of relay as `/semag/`:
 
 - **URL:** `/jsgh/<user>/<repo>@<ref>/<path>` (the `@<ref>` can be left off).
+- **Only repos the games use (added 2026-10-19):** anything under `gn-math`, plus each
+  `user/repo` that a relayed page loads through jsDelivr. The relay learns these from
+  the pages it serves, and saves them in `CACHE_DIR/jsgh/allowed.json`. Any other repo
+  gets a 404. Without this, anyone could make the domain serve their own HTML, which
+  would run on our origin, could read the site's storage (the stats key, the YouTube
+  profile), and could be used for phishing under our name.
   The path is validated; it cannot be pointed at an arbitrary host.
 - **Upstream:** jsDelivr `/gh/` first, except for `gn-math` (always GitHub raw).
   A 403/404 from jsDelivr falls through to `raw.githubusercontent.com`. The

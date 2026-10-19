@@ -8,6 +8,11 @@
 //     or <link> pointed at it will not run
 //
 // The games page rewrites cdn.jsdelivr.net/gh/... to /jsgh/user/repo@version/path.
+//
+// Only repos the games actually use are served: anything from gn-math, plus
+// every user/repo a relayed page refers to through jsDelivr. Without that
+// list, anyone could make this domain serve their own HTML (which would run
+// on our origin and could read the site's storage) or host phishing here.
 // This relay tries jsDelivr first (except for gn-math), then GitHub raw, and
 // sets a real Content-Type from the file extension when upstream sends
 // text/plain.
@@ -43,7 +48,17 @@ const EXT_TYPES = {
   '.br': 'application/octet-stream', '.gz': 'application/octet-stream'
 };
 
+const LEARN = /(?:cdn|fastly|gcore|testingcf|quantil)\.jsdelivr\.net\/gh\/([A-Za-z0-9._-]{1,39})\/([A-Za-z0-9._-]{1,100})/gi;
+const MAX_ALLOWED = 5000;
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// user/repo pairs a page refers to through jsDelivr
+export function referencedRepos(html) {
+  const out = new Set();
+  for (const m of String(html).matchAll(LEARN)) out.add((m[1] + '/' + m[2]).toLowerCase());
+  return out;
+}
 const hashOf = (key) => crypto.createHash('sha256').update(key).digest('hex');
 
 export function rewriteJsdelivr(html, origin) {
@@ -133,6 +148,29 @@ export function createJsgh({ cacheDir, maxBytes, headersFor }) {
   const metaPath = (h) => path.join(cacheDir, h.slice(0, 2), h + '.meta');
 
   fs.mkdirSync(cacheDir, { recursive: true });
+
+  // repos we may relay besides gn-math, learned from relayed pages; kept on disk
+  const allowFile = path.join(cacheDir, 'allowed.json');
+  const allowed = new Set();
+  try { for (const r of JSON.parse(fs.readFileSync(allowFile, 'utf8'))) allowed.add(r); } catch (e) { /* none yet */ }
+  let saveTimer = null;
+  function learn(html) {
+    let added = false;
+    for (const r of referencedRepos(html)) {
+      if (!allowed.has(r) && allowed.size < MAX_ALLOWED) { allowed.add(r); added = true; }
+    }
+    if (added && !saveTimer) {
+      saveTimer = setTimeout(() => {
+        saveTimer = null;
+        try {
+          fs.writeFileSync(allowFile + '.tmp', JSON.stringify([...allowed]));
+          fs.renameSync(allowFile + '.tmp', allowFile);
+        } catch (e) { /* keeps working from memory */ }
+      }, 1000);
+    }
+  }
+  const isAllowed = (info) => info.user.toLowerCase() === 'gn-math' ||
+    allowed.has((info.user + '/' + info.repo).toLowerCase());
   (function scan() {
     for (const d of fs.readdirSync(cacheDir)) {
       const dir = path.join(cacheDir, d);
@@ -255,7 +293,8 @@ export function createJsgh({ cacheDir, maxBytes, headersFor }) {
     }
     const isHtml = /text\/html/i.test(meta.type) && st.size <= MAX_HTML;
     if (isHtml) {
-      const body = Buffer.from((await fsp.readFile(file)).toString('utf8'), 'utf8');
+      const body = await fsp.readFile(file);
+      learn(body.toString('utf8'));
       const hd = headersOut(pathname, meta, true);
       hd['content-length'] = body.length;
       delete hd['accept-ranges'];
@@ -315,7 +354,7 @@ export function createJsgh({ cacheDir, maxBytes, headersFor }) {
     try {
       const pathname = new URL(req.url, 'http://x').pathname;
       const info = parseJsgh(pathname);
-      if (!info || !info.file.length) return plain(res, 404, 'not found');
+      if (!info || !info.file.length || !isAllowed(info)) return plain(res, 404, 'not found');
       const h = hashOf(info.key);
 
       if (index.has(h)) {
@@ -358,6 +397,7 @@ export function createJsgh({ cacheDir, maxBytes, headersFor }) {
         }
         if (aborted) return plain(res, 502, 'page too large');
         const raw = Buffer.concat(chunks);
+        learn(raw.toString('utf8'));
         const w = teeToCache(h, meta, raw.length);
         w.on('error', () => {});
         w.resume();
@@ -380,5 +420,5 @@ export function createJsgh({ cacheDir, maxBytes, headersFor }) {
     }
   }
 
-  return { handle, stats: () => ({ files: index.size, bytes: total }) };
+  return { handle, stats: () => ({ files: index.size, bytes: total, repos: allowed.size }) };
 }

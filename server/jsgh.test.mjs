@@ -4,7 +4,7 @@ import http from 'node:http';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseJsgh, rewriteJsdelivr, upstreams, createJsgh } from './jsgh.mjs';
+import { parseJsgh, rewriteJsdelivr, upstreams, createJsgh, referencedRepos } from './jsgh.mjs';
 
 test('parseJsgh accepts user/repo@version/path', () => {
   const p = parseJsgh('/jsgh/bubbls/youtube-playables@main/bowmasters/game.js');
@@ -59,6 +59,24 @@ test('rewriteJsdelivr points gh URLs at /jsgh/ and Ruffle at /vendor/', () => {
   assert.doesNotMatch(out, /jsdelivr/);
 });
 
+test('referencedRepos finds the user/repo pairs a page loads from jsDelivr', () => {
+  const html = '<base href="https://cdn.jsdelivr.net/gh/bubbls/youtube-playables@main/bowmasters/">' +
+    '<script src="//fastly.jsdelivr.net/gh/X/Y@1/z.js"></script><a href="https://example.com/gh/no/pe">';
+  assert.deepEqual([...referencedRepos(html)].sort(), ['bubbls/youtube-playables', 'x/y']);
+});
+
+test('relay refuses repos no game uses (no network needed)', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jsgh-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const jsgh = createJsgh({ cacheDir: dir, maxBytes: 1024 * 1024, headersFor: () => ({}) });
+  const server = http.createServer((req, res) => jsgh.handle(req, res));
+  t.after(() => new Promise((r) => server.close(r)));
+  const port = await listen(server);
+  for (const p of ['/jsgh/someone/phish@main/login.html', '/jsgh/someone/xss/a.svg', '/jsgh/bubbls/youtube-playables@main/x.js']) {
+    assert.equal((await get(port, p)).status, 404, p);
+  }
+});
+
 function listen(server) {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 }
@@ -90,6 +108,10 @@ test('relay serves a gn-math JS file as javascript, not text/plain', async (t) =
   assert.match(r.type, /javascript/);
   assert.doesNotMatch(r.type, /text\/plain/);
   assert.ok(r.body.length > 100);
+
+  // not allowed until a relayed page refers to it
+  const early = await get(port, '/jsgh/bubbls/youtube-playables@main/bowmasters/style/index.css');
+  assert.equal(early.status, 404);
 
   const html = await get(port, '/jsgh/gn-math/html@main/0-fix2.html');
   assert.equal(html.status, 200);
