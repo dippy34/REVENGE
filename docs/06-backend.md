@@ -78,12 +78,22 @@ equivalent block (`allow_private_ips: false`).
 - **Sync error.** The browser console shows `n.addChangeEventListener is not a function`
   from Rammerhead's optional localStorage sync; pages work, but a site's localStorage is
   not synced to the server (it stays in the visitor's browser).
+- **Heavy sites.** youtube.com did not render through Safari mode (the page stayed blank for
+  30 seconds on the live server); the site's own YouTube section does not use the proxy, so
+  it is unaffected. Reddit refuses the server's datacenter address in both engines. Wikipedia,
+  DuckDuckGo and Bing loaded with their images, as did example.com.
 - **Old and community-run.** Rammerhead's last release was October 2023.
 - **Docker.** The compose file does not start the Safari engine (the network lock needs
   systemd); the proxy page will say it is not running. Use `setup-native.sh`.
 - **Not tested here:** Safari itself. Everything was tested in Chromium with a Safari user
   agent (engine choice, sessions, navigation, Wikipedia, DuckDuckGo, Bing, YouTube).
   Whether Safari on an iPad renders and navigates correctly has to be checked on the device.
+
+**Checked on the live server (2026-10-20):** the install script's self-test passed (reaches
+the public web; blocked from loopback, private networks and the metadata address). From
+outside, browsing through a session to `127.0.0.1:2019` (Caddy admin), `:3000`, `:8081`,
+`:9123`, `:8080`, `localhost`, `[::1]`, `169.254.169.254`, the server's public IP and its
+own domain returned nothing in every case, while a normal public site loaded.
 
 ## The R2 games (`/semag/`)
 
