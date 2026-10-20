@@ -33,6 +33,16 @@ const DROP = new Set([
 
 const SESSIONS_PER_HOUR = 30;
 
+// hammerhead decodes gzip, deflate and br only. Browsers also offer zstd, and a
+// site that answers with it (Google Tag Manager does) gets its bytes "rewritten"
+// as if they were text: the browser then fails with ERR_CONTENT_DECODING_FAILED
+// and the page stays blank. So sites are only offered what hammerhead can read.
+const READABLE = /^(gzip|deflate|br|identity)\s*(;|$)/i;
+function acceptEncoding(v) {
+  const ok = String(v).split(',').map((s) => s.trim()).filter((s) => READABLE.test(s));
+  return ok.length ? ok.join(', ') : 'identity';
+}
+
 // /editsession?id=<32>&enableShuffling=0 (plus pwd when a key is set), nothing else
 function editAllowed(method, search) {
   if (method !== 'GET') return false;
@@ -84,7 +94,11 @@ export function createRh({ socketPath, port, host = '127.0.0.1' }) {
 
   function outHeaders(req, raw) {
     const out = {};
-    for (const [k, v] of Object.entries(raw)) if (!DROP.has(k.toLowerCase())) out[k] = v;
+    for (const [k, v] of Object.entries(raw)) {
+      const l = k.toLowerCase();
+      if (DROP.has(l)) continue;
+      out[k] = l === 'accept-encoding' ? acceptEncoding(v) : v;
+    }
     out['x-rh-host'] = req.headers.host || 'localhost';
     out['x-rh-proto'] = protoOf(req);
     return out;

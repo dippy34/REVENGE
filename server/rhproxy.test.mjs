@@ -82,7 +82,7 @@ test('forwarding hides who the visitor is and tells Rammerhead the public host',
       host: '631cb8a9.com',
       'x-forwarded-for': '203.0.113.7', 'x-forwarded-proto': 'https', 'x-real-ip': '203.0.113.7',
       forwarded: 'for=203.0.113.7', via: '1.1 caddy', 'cf-connecting-ip': '203.0.113.7',
-      'user-agent': 'TestAgent', cookie: 'k=v'
+      'user-agent': 'TestAgent', cookie: 'k=v', 'accept-encoding': 'gzip, deflate, br, zstd'
     }
   });
   assert.equal(r.status, 200);
@@ -95,6 +95,21 @@ test('forwarding hides who the visitor is and tells Rammerhead the public host',
   assert.equal(seen['x-rh-proto'], 'https');       // believed: the peer is local (Caddy)
   assert.equal(seen['user-agent'], 'TestAgent');
   assert.equal(seen.cookie, 'k=v');
+  assert.equal(seen['accept-encoding'], 'gzip, deflate, br');   // hammerhead cannot decode zstd
+});
+
+test('sites are never offered an encoding hammerhead cannot decode', async (t) => {
+  const got = [];
+  const upstream = http.createServer((req, res) => { got.push(req.headers['accept-encoding']); res.end(); });
+  t.after(() => new Promise((r) => upstream.close(r)));
+  const rh = createRh({ port: await listen(upstream) });
+  const front = http.createServer((req, res) => rh.handle(req, res));
+  t.after(() => new Promise((r) => front.close(r)));
+  const port = await listen(front);
+  for (const ae of ['zstd', 'zstd;q=1.0, br;q=0.9', 'gzip;q=0.5, ZSTD, identity', 'br']) {
+    await request(port, { path: `/${ID}/https://example.com/`, headers: { 'accept-encoding': ae } });
+  }
+  assert.deepEqual(got, ['identity', 'br;q=0.9', 'gzip;q=0.5, identity', 'br']);
 });
 
 test('POST bodies and WebSocket upgrades pass through', async (t) => {
@@ -164,7 +179,7 @@ test('the real Rammerhead process: proxies a page, strips headers, writes no log
   let seen = null;
   const site = http.createServer((req, res) => {
     seen = req.headers;
-    res.writeHead(200, { 'content-type': 'text/html' });
+    res.writeHead(200, { 'content-type': 'text/html', 'x-frame-options': 'DENY' });
     res.end('<!doctype html><html><head><title>t</title></head><body><h1>hello from the target</h1><a href="/next">next</a></body></html>');
   });
   t.after(() => new Promise((r) => site.close(r)));
@@ -196,6 +211,7 @@ test('the real Rammerhead process: proxies a page, strips headers, writes no log
     path: `/${id}/http://127.0.0.1:${sitePort}/`,
     // accept + sec-fetch-dest: what a browser sends when it navigates (Rammerhead only rewrites then)
     headers: { host: '631cb8a9.com', accept: 'text/html,application/xhtml+xml', 'sec-fetch-dest': 'document', 'sec-fetch-mode': 'navigate',
+      'accept-encoding': 'gzip, deflate, br, zstd',
       'x-forwarded-for': '203.0.113.7', 'x-real-ip': '203.0.113.7', via: '1.1 caddy', 'x-forwarded-proto': 'https' }
   });
   assert.equal(page.status, 200);
@@ -203,8 +219,16 @@ test('the real Rammerhead process: proxies a page, strips headers, writes no log
   for (const h of ['x-forwarded-for', 'x-real-ip', 'via', 'x-forwarded-proto', 'x-rh-host', 'x-rh-proto']) {
     assert.equal(seen[h], undefined, `the target site must not see ${h}`);
   }
+  assert.doesNotMatch(String(seen['accept-encoding']), /zstd/, 'the target must not be offered zstd');
+  // our UI shows the page in an iframe, so a site's DENY must not reach the browser
+  assert.equal(page.headers['x-frame-options'], undefined);
   // the rewritten page points back at the PUBLIC address, not at the loopback port
   assert.match(page.body, /631cb8a9\.com/);
+  // the client is patched so a page inside our proxy UI's iframe reads its own
+  // location.pathname, not /<session>/https://... (see rammerhead.cjs)
+  const hh = await request(port, { path: '/hammerhead.js' });
+  assert.equal(hh.status, 200);
+  assert.match(hh.body, /\.frameElement;return f&&!\w+\.parent\["%hammerhead%"\]\?null:f/);
   // Rammerhead's own 'disabled' log level logs everything; make sure it stays silent
   assert.equal(output, 0, 'rammerhead must write nothing to stdout/stderr');
 });

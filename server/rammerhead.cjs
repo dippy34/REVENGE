@@ -63,7 +63,11 @@ const config = {
   jsCache: new RammerheadJSMemCache(50 * 1024 * 1024),
   disableHttp2: false,
   stripClientHeaders: STRIP,
-  rewriteServerHeaders: {},
+  // Our UI shows the page in an <iframe>, so DENY (Discord, for one) would leave it
+  // blank. null removes it, as Rammerhead documents (its rewrite is called without
+  // the original value for most responses, so it cannot become SAMEORIGIN). CSP,
+  // and with it frame-ancestors, hammerhead removes itself.
+  rewriteServerHeaders: { 'x-frame-options': null },
   fileCacheSessionConfig: {},
   logLevel: 'disabled',
   generatePrefix: () => '',
@@ -92,6 +96,23 @@ const proxy = new RammerheadProxy({
   jsCache: config.jsCache,
   disableHttp2: false
 });
+
+// The proxy page shows Rammerhead inside an <iframe>. hammerhead finds that iframe
+// through window.frameElement, and once a site calls document.open() (sites that
+// build their page with document.write do, nova-hub.dev for one) it treats the page
+// as an "iframe without src" and gives the site the REAL location.pathname and host
+// (/<session>/https://...). A site that checks its own path then redirects forever.
+// Rammerhead's own fix for being iframed misses this one function, so the client
+// script is patched here, in memory: when the parent window is not a proxied page
+// (it is our UI), hammerhead sees no frame element. Nested proxied frames are as before.
+const FRAME_ELEMENT = /function ([\w$]+)\s*\((\w+)\)\s*\{\s*try\s*\{\s*return \2\.frameElement;?\s*\}\s*catch\s*\(\w+\)\s*\{\s*return null;?\s*\}\s*\}/;
+const client = proxy.routes.get('GET /hammerhead.js');
+const clientSrc = String(client.handler.content);
+if (FRAME_ELEMENT.test(clientSrc)) {
+  client.handler.content = Buffer.from(clientSrc.replace(FRAME_ELEMENT, (m, fn, w) =>
+    `function ${fn}(${w}){try{var f=${w}.frameElement;return f&&!${w}.parent["%hammerhead%"]?null:f}catch(e){return null}}`));
+  client.handler.etag = require('node:crypto').createHash('md5').update(client.handler.content).digest('hex');
+}
 
 const store = new RammerheadSessionMemoryStore({ logger, staleTimeout: 30 * 60 * 1000, maxToLive: 4 * 60 * 60 * 1000 });
 store.attachToProxy(proxy);

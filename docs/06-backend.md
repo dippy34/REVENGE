@@ -58,6 +58,24 @@ uses Safari's engine, so Chrome or Firefox on an iPad also gets Safari mode.
 - **Refused routes:** `/deletesession`, and `/editsession` except to turn URL scrambling off
   (it could route a session through another proxy). One visitor can make 30 sessions an hour.
 
+**Three fixes on top of Rammerhead** (all in our code, nothing in `node_modules` is edited;
+each has a test in `rhproxy.test.mjs`). Before them, nova-hub.dev stayed blank and Discord
+was refused:
+- **No zstd.** hammerhead decodes gzip, deflate and br only. Browsers also offer zstd, and a
+  site that answers with it (Google Tag Manager does) got its bytes "rewritten" as text, so
+  the browser failed with `ERR_CONTENT_DECODING_FAILED`. `rhproxy.mjs` now offers sites only
+  what hammerhead can read.
+- **The page's own address inside our iframe.** Rammerhead expects to be the top window.
+  Inside our iframe, once a site calls `document.open()` (sites that build their page with
+  `document.write` do), hammerhead treats it as an "iframe without src" and gives the site
+  the real `location.pathname` and `host` (`/<session>/https://...`). nova-hub.dev checks its
+  own path and then redirected forever (33 reloads in 10 seconds). `rammerhead.cjs` patches
+  hammerhead's `getFrameElement` in the served `/hammerhead.js` (in memory, at startup): if
+  the parent window is not a proxied page (it is our UI), there is no frame element.
+  Rammerhead's own fix for being iframed missed this function.
+- **`X-Frame-Options` removed.** Our UI shows the page in an iframe, so `DENY` (Discord)
+  blanked it. hammerhead already removes CSP, and with it `frame-ancestors`.
+
 **The network lock (important).** Rammerhead has no filter of its own, so on its own it
 would let anyone read this server's private services (Caddy's admin port, the app, the
 cloud provider's private network) by "browsing" to them. `setup-native.sh` runs it with
@@ -80,13 +98,15 @@ equivalent block (`allow_private_ips: false`).
   not synced to the server (it stays in the visitor's browser).
 - **Heavy sites.** youtube.com did not render through Safari mode (the page stayed blank for
   30 seconds on the live server); the site's own YouTube section does not use the proxy, so
-  it is unaffected. Reddit refuses the server's datacenter address in both engines. Wikipedia,
-  DuckDuckGo and Bing loaded with their images, as did example.com.
+  it is unaffected. Reddit refuses the server's datacenter address in both engines, and
+  Google search may answer with its "unusual traffic" check for the same reason. These
+  loaded: nova-hub.dev, Wikipedia, DuckDuckGo, Bing, GitHub, Discord, Cool Math Games, Poki,
+  CrazyGames, Hacker News, Twitch, example.com.
 - **Old and community-run.** Rammerhead's last release was October 2023.
 - **Docker.** The compose file does not start the Safari engine (the network lock needs
   systemd); the proxy page will say it is not running. Use `setup-native.sh`.
 - **Not tested here:** Safari itself. Everything was tested in Chromium with a Safari user
-  agent (engine choice, sessions, navigation, Wikipedia, DuckDuckGo, Bing, YouTube).
+  agent (engine choice, sessions, navigation, the sites above, YouTube).
   Whether Safari on an iPad renders and navigates correctly has to be checked on the device.
 
 **Checked on the live server (2026-10-20):** the install script's self-test passed (reaches
