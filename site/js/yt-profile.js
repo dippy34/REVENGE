@@ -235,6 +235,17 @@
     return fresh.concat(old);
   }
 
+  // Read-only view of the topic weights, strongest first (for the library).
+  function topics() {
+    var p = load();
+    var t = now();
+    if (!p) return [];
+    return Object.keys(p.topics).map(function (k) {
+      var e = p.topics[k];
+      return { k: k, w: decayed(e, t), seed: !!e.seed, learned: !!e.learned };
+    }).sort(function (a, b) { return b.w - a.w; });
+  }
+
   /* ---------- lists: likes, subscriptions, history, hidden ---------- */
 
   function idSet(key) {
@@ -303,6 +314,7 @@
     exists: exists,
     create: create,
     interests: interests,
+    topics: topics,
     searched: searched,
     signal: signal,
     channelWeight: channelWeight,

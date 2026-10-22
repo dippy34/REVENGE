@@ -7,13 +7,14 @@
   "main": "server.mjs",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check headers.mjs && node --check jsgh.mjs && node --check tube.mjs && node --check semag.mjs && node --check stats.mjs && node --check rhproxy.mjs && node --check rammerhead.cjs && node --test jsgh.test.mjs tube.test.mjs rhproxy.test.mjs"
+    "check": "node --check server.mjs && node --check headers.mjs && node --check jsgh.mjs && node --check tube.mjs && node --check semag.mjs && node --check stats.mjs && node --check rhproxy.mjs && node --check rammerhead.cjs && node --check ai.mjs && node --check hunt.mjs && node --check hunt-lib.mjs && node --check hunt-routes.mjs && node --check hunt-play.mjs && node --check hunt-runs.mjs && node --check hunt-fixture.mjs && node --check hunt-pack.mjs && node --check hunt-synth.mjs && node --check hunt-tools-kit.mjs && node --check ../tools/hunt-kit.mjs && node --check ../tools/hunt-env.mjs && node --check ../tools/hunt-keys.mjs && node --check ../tools/hunt-checks.mjs && node --check ../tools/hunt-seal.mjs && node --check ../tools/hunt-open.mjs && node --check ../tools/hunt-sandbox.mjs && node --test jsgh.test.mjs tube.test.mjs rhproxy.test.mjs ai.test.mjs hunt.test.mjs hunt-play.test.mjs hunt-runs.test.mjs hunt-sim.test.mjs hunt-tools.test.mjs hunt-seal.test.mjs"
   },
   "engines": {
     "node": ">=20"
   },
   "license": "AGPL-3.0-only",
   "dependencies": {
+    "@anthropic-ai/sdk": "0.135.0",
     "@mercuryworkshop/libcurl-transport": "2.0.5",
     "@mercuryworkshop/scramjet": "2.0.67-alpha.2",
     "@mercuryworkshop/scramjet-controller": "0.0.14",

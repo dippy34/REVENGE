@@ -7,6 +7,7 @@ COPY server/package.json server/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 # the Safari engine (rammerhead.cjs) is not started in Docker: see docs/06-backend.md
 COPY server/*.mjs server/rammerhead.cjs ./
+COPY server/hunt ./hunt
 COPY site /app/site
 
 RUN mkdir /cache /data && chown node:node /cache /data

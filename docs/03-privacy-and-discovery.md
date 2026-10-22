@@ -36,6 +36,12 @@ Honest framing: "no trace whatsoever" is not achievable. Hosts, registrars, and 
 - No reused usernames, code, comments, or writing style from public accounts.
 - Run the leak check (see `tools/` in the roadmap) before every deploy: scan the output for names, local paths, and unexpected external requests.
 
+## The ghost (hidden AI page)
+- What a visitor types on `/ghost/` goes to Anthropic's API through our server, so Anthropic sees the text and the server's IP, not the visitor's.
+- Our server stores nothing: no logs of messages or replies, and the conversation lives only in the open page.
+- Rate limits use a keyed hash of the IP, held in memory only and dropped after 10 minutes.
+- The page says this in one line under the input.
+
 ## Limits to state plainly
 - The host and network can still see that the domain was visited.
 - Anyone with the exact link can load the site.

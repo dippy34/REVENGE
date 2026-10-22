@@ -12,28 +12,39 @@
 <link rel="stylesheet" href="../css/base.css">
 <link rel="stylesheet" href="../css/fx.css">
 <link rel="stylesheet" href="../css/games.css">
+<link rel="stylesheet" href="../css/eggs.css">
 <script src="../js/early.js"></script>
 <script src="../js/fx.js" defer></script>
 <script src="../js/games.js" defer></script>
 <script src="../js/hit.js" defer></script>
+<script src="../js/eggs.js" defer></script>
+<script src="../js/hunt.js" defer></script>
 </head>
 <body>
+<div class="g-bg" aria-hidden="true"></div>
 
-<header class="g-top">
-  <a class="g-back" href="../" aria-label="back to menu">
-    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
-    <span>games</span>
-  </a>
+<header class="g-top" id="g-top">
+  <div class="g-brand">
+    <a class="g-back" href="../" aria-label="back to menu" data-cursor="menu">
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path class="hex" d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path class="eyes" d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+    </a>
+    <span class="g-path" aria-hidden="true">~/g/<b id="g-path">all</b></span>
+  </div>
   <form class="g-search" id="g-search" role="search" autocomplete="off">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+    <span class="g-prompt" aria-hidden="true">&gt;</span>
     <label class="sr" for="g-q">search games</label>
-    <input id="g-q" type="search" maxlength="100" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="search games">
+    <input id="g-q" type="search" maxlength="100" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="search" placeholder="search games">
+    <kbd class="g-kbd" aria-hidden="true">/</kbd>
+    <span class="g-hits" id="g-hits" aria-hidden="true"></span>
   </form>
   <div class="g-tabs" role="group" aria-label="show">
-    <button type="button" id="g-all" aria-pressed="true">all</button>
-    <button type="button" id="g-fav" aria-pressed="false">saved <span class="g-n" id="g-favn"></span></button>
+    <span class="g-tab-bar" id="g-tab-bar" aria-hidden="true"></span>
+    <button type="button" id="g-all" aria-pressed="true" aria-label="all" data-scramble>all</button>
+    <button type="button" id="g-fav" aria-pressed="false"><span data-scramble>saved</span> <span class="g-n" id="g-favn"></span></button>
   </div>
+  <span class="g-load" id="g-load" aria-hidden="true"></span>
 </header>
+<p class="sr" id="g-live" role="status" aria-live="polite"></p>
 
 <main class="g-view" id="view" tabindex="-1"><p class="g-empty">loading games</p></main>
 
@@ -43,7 +54,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
       <span>games</span>
     </button>
-    <strong id="p-name"></strong>
+    <div class="g-bar-mid">
+      <strong id="p-name"></strong>
+      <span class="g-tag" id="p-src" aria-hidden="true"></span>
+    </div>
     <span class="g-bar-r">
       <button type="button" class="g-btn g-icon" id="p-save" aria-pressed="false" aria-label="save game"></button>
       <button type="button" class="g-btn" id="p-full">
@@ -52,7 +66,25 @@
       </button>
     </span>
   </div>
-  <iframe id="p-frame" title="game" sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-popups" allow="fullscreen; gamepad; autoplay"></iframe>
+  <div class="g-stage" id="p-stage">
+    <i class="g-br" aria-hidden="true"></i>
+    <iframe id="p-frame" title="game" sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-popups" allow="fullscreen; gamepad; autoplay"></iframe>
+    <div class="g-boot" id="p-boot">
+      <img class="g-boot-bg" id="p-boot-bg" alt="" decoding="async">
+      <div class="g-boot-box">
+        <p class="g-boot-k" aria-hidden="true">// mounting</p>
+        <p class="g-boot-name" id="p-boot-name" aria-hidden="true"></p>
+        <pre class="g-boot-log" id="p-boot-log" aria-hidden="true"></pre>
+        <p class="g-boot-bar" aria-hidden="true"><span id="p-boot-bar"></span> <b id="p-boot-pct">0%</b></p>
+        <p class="g-boot-st" id="p-boot-st" role="status" aria-live="polite">loading</p>
+        <div class="g-boot-act" id="p-boot-act" hidden>
+          <button type="button" class="g-btn" id="p-retry">try again</button>
+          <button type="button" class="g-btn" id="p-back">back to games</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="g-keys" aria-hidden="true"><b>esc</b> back &middot; <b>f</b> fullscreen &middot; click the game to play</p>
 </div>
 <noscript><p class="g-empty">This page needs JavaScript.</p></noscript>
 

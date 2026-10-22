@@ -58,9 +58,9 @@ uses Safari's engine, so Chrome or Firefox on an iPad also gets Safari mode.
 - **Refused routes:** `/deletesession`, and `/editsession` except to turn URL scrambling off
   (it could route a session through another proxy). One visitor can make 30 sessions an hour.
 
-**Three fixes on top of Rammerhead** (all in our code, nothing in `node_modules` is edited;
-each has a test in `rhproxy.test.mjs`). Before them, nova-hub.dev stayed blank and Discord
-was refused:
+**Four fixes on top of Rammerhead** (all in our code, nothing in `node_modules` is edited;
+each has a test in `rhproxy.test.mjs`). Before the first three, nova-hub.dev stayed blank and
+Discord was refused; before the fourth, Safari showed pages without anything their scripts draw:
 - **No zstd.** hammerhead decodes gzip, deflate and br only. Browsers also offer zstd, and a
   site that answers with it (Google Tag Manager does) got its bytes "rewritten" as text, so
   the browser failed with `ERR_CONTENT_DECODING_FAILED`. `rhproxy.mjs` now offers sites only
@@ -75,6 +75,16 @@ was refused:
   Rammerhead's own fix for being iframed missed this function.
 - **`X-Frame-Options` removed.** Our UI shows the page in an iframe, so `DENY` (Discord)
   blanked it. hammerhead already removes CSP, and with it `frame-ancestors`.
+- **Safari 26 and later.** WebKit now keeps CSS style properties (`style.background` and the
+  rest) on `CSSStyleProperties.prototype`. hammerhead's start-up check only knew Firefox's
+  `CSS2Properties`, Chrome's `CSSStyleDeclaration.prototype` and old Safari's per-element
+  properties, so it read a property descriptor that does not exist and threw. hammerhead
+  never started, every rewritten script failed with `__get$ is not a function`, and pages
+  showed their HTML and images but no buttons, menus or script-drawn text. `rammerhead.cjs`
+  patches the served `/hammerhead.js` (in memory, at startup) to treat `CSSStyleProperties`
+  like `CSS2Properties`, only when Chrome's check fails, so Chrome and Firefox are unchanged.
+  Checked in WebKit 27.2 (Playwright's build): DuckDuckGo went from 28 errors and a bare
+  skeleton to the full page, and YouTube's home page went from blank to rendered.
 
 **The network lock (important).** Rammerhead has no filter of its own, so on its own it
 would let anyone read this server's private services (Caddy's admin port, the app, the
@@ -101,13 +111,17 @@ equivalent block (`allow_private_ips: false`).
   it is unaffected. Reddit refuses the server's datacenter address in both engines, and
   Google search may answer with its "unusual traffic" check for the same reason. These
   loaded: nova-hub.dev, Wikipedia, DuckDuckGo, Bing, GitHub, Discord, Cool Math Games, Poki,
-  CrazyGames, Hacker News, Twitch, example.com.
+  CrazyGames, Hacker News, Twitch, example.com. Discord's login page has since stopped
+  rendering in Safari mode (checked locally in Chromium and WebKit: every file loads with
+  200, but the app never draws), most likely because Rammerhead's engine is from 2023.
 - **Old and community-run.** Rammerhead's last release was October 2023.
 - **Docker.** The compose file does not start the Safari engine (the network lock needs
   systemd); the proxy page will say it is not running. Use `setup-native.sh`.
-- **Not tested here:** Safari itself. Everything was tested in Chromium with a Safari user
-  agent (engine choice, sessions, navigation, the sites above, YouTube).
-  Whether Safari on an iPad renders and navigates correctly has to be checked on the device.
+- **Tested in WebKit, not in Safari itself:** the engine choice, sessions, navigation and the
+  sites above were tested in Chromium with a Safari user agent. After the `CSSStyleProperties`
+  fix, Safari mode was also checked in WebKit 27.2 (Playwright's build of Safari's engine):
+  DuckDuckGo, Wikipedia and YouTube's home page render. The Safari app itself and an iPad
+  still have to be checked on the device.
 
 **Checked on the live server (2026-10-20):** the install script's self-test passed (reaches
 the public web; blocked from loopback, private networks and the metadata address). From
@@ -326,3 +340,18 @@ source still has to be offered to the people who use the proxy.
   and the proxy still load with no console errors.
 - **Not verified:** the Docker/Caddy path (`setup.sh`) on a real server, the
   Cloudflare Tunnel path, Safari, Firefox and phones.
+
+## The ghost AI (`/api/ai`)
+
+- `server/ai.mjs` streams replies from Anthropic's API (official `@anthropic-ai/sdk`, pinned) to the hidden `/ghost/` page. Settings:
+  - `ANTHROPIC_API_KEY`: required; without it the page shows "asleep".
+  - `AI_MODEL`: default `claude-haiku-5-5`.
+  - `AI_DAILY_MAX`: default 300 requests a day for everyone.
+  - Other limits are the `LIMITS` constant in `ai.mjs`.
+- **Where the key goes:**
+  - On the Hetzner box (native setup): add `ANTHROPIC_API_KEY=...` to `/etc/revenge.env` and restart the service.
+  - With Docker: `server/.env`.
+  - Locally: `server/.env`, which is gitignored.
+- **Cost:** Haiku 5.5 is $0.10 per million input tokens and $0.50 per million output tokens (prompts up to 100K tokens). Effort is low and replies are capped at 8192 tokens, so a typical exchange costs a small fraction of a cent. The daily cap bounds the total.
+- **Testing without a key:** `cd server && PORT=8097 AI_MOCK=1 node server.mjs`, then open `/ghost/`. Mock mode streams a canned reply and keeps every limit; `[[refuse]]`, `[[error]]`, `[[crowd]]` and `[[long]]` in a message trigger the error paths.
+- **Tests:** `server/ai.test.mjs`, run by `npm run check`.

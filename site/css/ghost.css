@@ -1,0 +1,418 @@
+/* ghost.css: the hidden terminal at /ghost/. A full-screen CRT console:
+   the ASCII mask looms behind (brighter while it speaks), a transcript
+   scrolls in the middle, the prompt sits at the bottom, above the keyboard
+   on phones. Monochrome, square, same tokens as the rest of the site. */
+
+/* ---------- page ---------- */
+
+html[data-page="ghost"],
+html[data-page="ghost"] body {
+  height: 100%;
+  overflow: hidden;
+}
+html[data-page="ghost"] #rain { opacity: .32; }
+
+.gh {
+  /* the text column: centred, or left of the mask on wide screens */
+  --col: min(720px, 100% - 2 * var(--gutter));
+  --col-l: calc((100% - var(--col)) / 2);
+  --col-r: calc(100% - var(--col) - var(--col-l));
+  position: fixed;
+  top: var(--gh-vt, 0px);
+  right: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  height: var(--gh-vh, 100dvh);
+}
+@media (min-width: 1100px) {
+  .gh { --col-l: max(var(--gutter), calc(50% - 560px)); }
+}
+
+/* ---------- the mask (canvas drawn by fx.js) ---------- */
+
+.obj.gh-obj {
+  position: fixed;
+  z-index: 1;
+  top: 50%;
+  right: auto;
+  left: 50%;
+  width: min(82vw, 480px, 58vh);
+  margin: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity .9s var(--ease-out), filter .9s var(--ease-out);
+}
+.obj.gh-obj.is-on { opacity: .17; }
+.gh-speaking .obj.gh-obj.is-on { opacity: .3; }
+@media (min-width: 1100px) {
+  .obj.gh-obj {
+    right: max(var(--gutter), calc(50% - 660px));
+    left: auto;
+    width: min(34vw, 500px, 64vh);
+    transform: translateY(-52%);
+  }
+  .obj.gh-obj.is-on { opacity: .5; }
+  .gh-speaking .obj.gh-obj.is-on { opacity: 1; filter: drop-shadow(0 0 18px rgba(255, 255, 255, .12)); }
+}
+
+/* ---------- top bar ---------- */
+
+.gh-top {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 18px;
+  min-height: 66px;
+  padding: 10px var(--gutter);
+}
+.gh-top::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .3) 30%, rgba(255, 255, 255, .3) 70%, rgba(255, 255, 255, .06));
+  opacity: .6;
+}
+
+.gh-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--fg);
+  transition: color .2s var(--ease);
+}
+.gh-back svg { width: 26px; height: 26px; overflow: visible; transition: filter .3s var(--ease); }
+.gh-back:hover,
+.gh-back:focus-visible { color: var(--hi); }
+.gh-back:hover svg,
+.gh-back:focus-visible svg { filter: drop-shadow(0 0 6px rgba(255, 255, 255, .7)); }
+.gh-back .hex { stroke-dasharray: 78; animation: gh-draw 1.4s var(--ease-out) .1s backwards; }
+.gh-back .eyes { transform-box: fill-box; transform-origin: center; animation: gh-eyes 6s var(--ease) 1.6s infinite; }
+/* the small mark opens its eyes wide while the ghost speaks */
+.gh-speaking .gh-back .eyes { animation: none; transform: scaleY(1.7); }
+@keyframes gh-draw { from { stroke-dashoffset: 78; } }
+@keyframes gh-eyes {
+  0%, 93%, 100% { transform: none; }
+  95%           { transform: scaleY(.15); }
+  97%           { transform: none; }
+}
+.gh-path { font-size: 12px; letter-spacing: .04em; color: var(--dim); }
+.gh-path b { font-weight: 400; color: var(--hi); }
+.gh-path::after { content: "_"; color: var(--hi); animation: gh-blink 1.05s steps(1) infinite; }
+@keyframes gh-blink { 50% { opacity: 0; } }
+
+/* state tag: a square that tells awake / listening / asleep at a glance */
+.gh-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px;
+  font-size: 12px;
+  letter-spacing: .04em;
+  color: var(--dim);
+  border: 1px solid var(--line-2);
+  transition: color .3s var(--ease), border-color .3s var(--ease);
+}
+.gh-state i {
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--line-3);
+}
+.gh-state[data-state="wait"] i { animation: gh-blink .5s steps(1) infinite; }
+.gh-state[data-state="awake"] i,
+.gh-state[data-state="speaking"] i,
+.gh-state[data-state="thinking"] i {
+  background: var(--hi);
+  border-color: var(--hi);
+  box-shadow: 0 0 6px rgba(255, 255, 255, .9);
+}
+.gh-state[data-state="awake"] i { animation: gh-pulse 2.4s ease-in-out infinite; }
+.gh-state[data-state="thinking"] i { animation: gh-blink .36s steps(1) infinite; }
+.gh-state[data-state="speaking"],
+.gh-state[data-state="thinking"] { color: var(--hi); border-color: var(--line-3); }
+.gh-state[data-state="lost"] i { border-style: dashed; }
+@keyframes gh-pulse { 50% { opacity: .25; box-shadow: none; } }
+/* the hunt (hunt.js), only while a frequency is live: the pill reads
+   another word for a moment, or carries it after the label when motion
+   is reduced */
+.gh-state.is-pill { color: var(--fg); border-style: dashed; }
+.gh-state .gh-pill { color: var(--mute); }
+.gh-state .gh-pill::before { content: "/ "; color: var(--line-3); }
+
+/* ---------- transcript ---------- */
+
+.gh-log {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 28px var(--col-r) 22px var(--col-l);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: 14px;
+  line-height: 1.7;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 26px, #000 calc(100% - 10px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 26px, #000 calc(100% - 10px), transparent 100%);
+}
+.gh-log:focus-visible { outline: none; }
+
+.gh-line,
+.gh-msg {
+  display: grid;
+  /* px, not ch: system lines use a smaller font but share the column */
+  grid-template-columns: 50px minmax(0, 1fr);
+  column-gap: 10px;
+  margin: 0;
+  animation: gh-in .36s var(--ease-out) backwards;
+}
+@keyframes gh-in { from { opacity: 0; transform: translateY(5px); filter: blur(2px); } }
+.gh-msg { margin-top: 20px; }
+.gh-line + .gh-line { margin-top: 1px; }
+.gh-msg + .gh-line,
+.gh-line + .gh-msg { margin-top: 18px; }
+
+.gh-mark { color: var(--mute); user-select: none; -webkit-user-select: none; }
+.gh-text { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* system lines: dim, small */
+.gh-line { font-size: 12.5px; color: var(--dim); }
+.gh-line.is-boot { color: var(--mute); }
+.gh-line.is-boot .gh-text { color: var(--dim); }
+.gh-line.is-dim .gh-text { color: var(--mute); }
+.gh-line.is-cmd .gh-mark { color: var(--dim); }
+.gh-line.is-cmd .gh-text { color: var(--fg); }
+.gh-line.is-err .gh-mark { color: var(--hi); text-shadow: var(--glow); }
+.gh-line.is-err .gh-text { color: var(--hi); text-shadow: var(--glow); }
+/* what the signal (not the ghost) answers to /signal */
+.gh-line.is-signal .gh-mark { color: var(--dim); }
+.gh-line.is-signal .gh-text { color: var(--fg); letter-spacing: .02em; }
+
+/* you */
+.gh-msg.is-you .gh-mark { color: var(--hi); text-shadow: var(--glow); }
+.gh-msg.is-you .gh-text { color: var(--fg); }
+.gh-msg.is-lost .gh-text { color: var(--dim); }
+.gh-msg.is-lost .gh-text::after {
+  content: "  [not delivered]";
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--mute);
+}
+
+/* the ghost: brighter, a little phosphor bloom */
+.gh-msg.is-ghost .gh-mark { padding-top: 1px; font-size: 12px; letter-spacing: .06em; color: var(--dim); }
+.gh-msg.is-ghost .gh-text { color: var(--hi); text-shadow: 0 0 1px rgba(255, 255, 255, .35), 0 0 10px rgba(255, 255, 255, .12); }
+/* small [tags] inside a ghost line: [withdrawn], [lost] */
+.gh-tag {
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--mute);
+  text-shadow: none;
+}
+/* the ghost speaking about the turn itself (a refusal, a limit) */
+.gh-say { display: inline-block; }
+.gh-tag + .gh-say { margin-left: .4ch; }
+.gh-msg.is-note .gh-text { color: var(--fg); }
+/* a reply that broke off: still readable, but not remembered */
+.gh-msg.is-cut .gh-text { color: var(--dim); text-shadow: none; }
+/* said on its own while you were quiet: softer than a reply */
+.gh-msg.is-idle .gh-text { color: var(--dim); text-shadow: none; }
+.gh-msg.is-idle .gh-mark { color: var(--mute); }
+
+/* block cursor at the end of a reply that is still arriving */
+.gh-caret {
+  display: inline-block;
+  width: .62em;
+  height: 1.15em;
+  margin-left: 2px;
+  vertical-align: -.2em;
+  background: var(--hi);
+  box-shadow: 0 0 8px rgba(255, 255, 255, .6);
+  animation: gh-blink 1s steps(1) infinite;
+}
+.gh-speaking .gh-caret { animation: none; }
+
+/* code rows (lines indented by four spaces in a reply) */
+.gh-code {
+  display: block;
+  margin: 8px 0;
+  padding: 8px 12px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+  color: var(--fg);
+  text-shadow: none;
+  background: rgba(255, 255, 255, .035);
+  border-left: 1px solid var(--line-3);
+  overflow-wrap: normal;
+}
+.gh-code-l { display: block; }
+
+/* thinking: a breathing signal meter */
+.gh-msg.is-thinking .gh-text { color: var(--dim); text-shadow: none; }
+.gh-meter { color: var(--hi); letter-spacing: .12em; text-shadow: var(--glow); }
+.gh-think-t { margin-left: 1.4ch; font-size: 12px; color: var(--mute); }
+/* the dots fill in one by one */
+.gh-think-t::after { content: "..."; animation: gh-dots 1.6s steps(1) infinite; }
+@keyframes gh-dots {
+  0%  { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+}
+
+/* asleep: one framed line, in the menu's voice */
+.gh-sleep {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  max-width: 540px;
+  margin: 26px 0 0 60px;
+  padding: 20px 22px;
+  border: 1px solid var(--line-2);
+  background: rgba(0, 0, 0, .55);
+  box-shadow: var(--glow-box);
+  animation: gh-in .5s var(--ease-out) backwards;
+}
+.gh-sleep::before,
+.gh-sleep::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 0 solid var(--hi);
+}
+.gh-sleep::before { top: -1px; left: -1px; border-top-width: 1px; border-left-width: 1px; }
+.gh-sleep::after { right: -1px; bottom: -1px; border-right-width: 1px; border-bottom-width: 1px; }
+.gh-sleep + .gh-line,
+.gh-sleep + .gh-msg { margin-top: 22px; }
+.gh-sleep-h { font-size: clamp(22px, 3.4vw, 32px); line-height: 1.2; color: var(--hi); text-shadow: var(--glow); }
+.gh-sleep-s { font-size: 13px; color: var(--dim); }
+
+/* ---------- prompt ---------- */
+
+.gh-form {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 0 var(--col-r) 0 var(--col-l);
+  padding: 12px 12px 12px 16px;
+  background: rgba(0, 0, 0, .78);
+  border: 1px solid var(--line-2);
+  transition: border-color .2s var(--ease), box-shadow .3s var(--ease);
+}
+.gh-form:focus-within { border-color: var(--line-3); box-shadow: var(--glow-box); }
+.gh-prompt {
+  flex: none;
+  align-self: flex-start;
+  font-size: 15px;
+  line-height: 26px;
+  color: var(--dim);
+  transition: color .2s var(--ease), text-shadow .2s var(--ease);
+}
+.gh-form:focus-within .gh-prompt { color: var(--hi); text-shadow: var(--glow); }
+.gh-in {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+  max-height: 168px;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 15px;
+  line-height: 26px;
+  color: var(--hi);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  resize: none;
+  caret-color: var(--hi);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.gh-in::placeholder { color: var(--mute); opacity: 1; }
+.gh-in:disabled { opacity: .5; }
+.gh-count { flex: none; align-self: center; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+.gh-send {
+  flex: none;
+  min-width: 64px;
+  min-height: 28px;
+  padding: 4px 14px;
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--bg);
+  background: var(--hi);
+  border: 1px solid var(--hi);
+  border-radius: 0;
+  box-shadow: 0 0 18px rgba(255, 255, 255, .22);
+  transition: background-color .16s var(--ease), color .16s var(--ease), box-shadow .2s var(--ease);
+}
+.gh-send:hover { box-shadow: 0 0 26px rgba(255, 255, 255, .4); }
+.gh-send:disabled { opacity: .35; box-shadow: none; }
+.gh-send.is-stop { color: var(--hi); background: transparent; border-color: var(--line-3); box-shadow: none; }
+/* Enter while the ghost is still talking: the stop key twitches */
+.gh-send.is-nudge { animation: gh-nudge .32s var(--ease-snap); }
+@keyframes gh-nudge { 30% { transform: translateX(-3px); } 60% { transform: translateX(3px); } }
+.gh-send.is-stop::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  background: var(--hi);
+  vertical-align: 1px;
+}
+
+.gh-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 18px;
+  margin: 9px var(--col-r) 14px var(--col-l);
+  font-size: 11px;
+  letter-spacing: .03em;
+  color: var(--mute);
+}
+.gh-keys i { font-style: normal; color: var(--line-3); }
+.gh-honest { color: var(--dim); }
+
+/* ---------- performance tiers (fx.js sets data-fx) ---------- */
+
+html[data-fx="low"] .gh-log { -webkit-mask-image: none; mask-image: none; }
+html[data-fx="low"] .gh-line,
+html[data-fx="low"] .gh-msg,
+html[data-fx="low"] .gh-sleep { animation: none; }
+html[data-fx="low"] .gh-speaking .obj.gh-obj.is-on { filter: none; }
+
+/* ---------- phones ---------- */
+
+@media (max-width: 720px) {
+  .gh-top { min-height: 56px; }
+  .gh-log { padding-top: 20px; font-size: 14px; }
+  .gh-line,
+  .gh-msg { grid-template-columns: 14px minmax(0, 1fr); }
+  /* the ghost's name sits above its words instead of in the margin */
+  .gh-msg.is-ghost { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  .gh-msg.is-ghost .gh-mark { font-size: 11px; }
+  .gh-sleep { margin-left: 0; padding: 18px; }
+  .gh-form { padding: 10px 10px 10px 12px; gap: 10px; }
+  /* 16px keeps iOS from zooming into the field */
+  .gh-in { font-size: 16px; }
+  .gh-keys { display: none; }
+  .gh-foot { margin-bottom: 10px; }
+}
+@media (hover: none) {
+  .gh-keys { display: none; }
+}

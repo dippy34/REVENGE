@@ -141,3 +141,41 @@
 - **What:** keep Scramjet for Chrome, Edge and Firefox, and use Rammerhead (server-side rewriting) for Safari and every iPhone / iPad browser, picked automatically with a manual switch. The owner confirmed Rammerhead works in Safari on a Mac before this was built.
 - **Cost:** a second service on the server (up to 600 MB) and a network lock, because Rammerhead cannot be trusted to refuse private addresses. Details and limits in `06-backend.md`.
 - **Not done:** the Docker setup does not include it.
+
+### Visual overhaul (2026-10-19)
+- **Every page restyled** in the existing black-and-white terminal theme, pushed further. What it looks like is in `02-design.md`.
+- **The square terminal look wins over the earlier rounded "pill" restyle:** after pulling, the owner asked for the overhaul to be put back on top. Kept from that restyle:
+  - the onboarding layout and its copy: "what are you into?", the "your picks" panel with a `[##.]` meter, "popular topics", and the fixed bottom bar with the build button
+  - the solid "add" button
+- **Thumbnails:**
+  - Cards use `srcset` with `mqdefault` and `hqdefault`. Same host and same video, and nothing loads on hover.
+  - A thumbnail used as decoration (the ambient glow behind the player and Shorts) is always grayscale.
+- **The cursor spotlight stays removed.** Nothing follows the pointer except the cursor itself and the rain's glyph lens.
+- **New storage:** `sessionStorage` key `fx.in`, a one-shot flag that lets the next page play the CRT power-on. No new `localStorage` keys.
+- **Server changes** (small):
+  - A missing path now returns `site/404.html` (with the menu's headers) instead of plain text.
+  - `jsgh.mjs` and `semag.mjs` ignore a late read error on a cached file. Before this fix, a client leaving while its file was being evicted crashed the whole server.
+
+### Effect levels, easter eggs and the ghost (2026-10-19)
+- **Effect levels (high / mid / low)** keep weak devices smooth. On first visit the level comes from device hints, then a ~2 s measurement of frame times and CPU. A watchdog afterwards only steps down, never back up within a visit. The result is cached for 3 days.
+  - `?fx=low|mid|high|auto` (or the console's `fx` command) forces a level. `fx.perf()` in devtools explains the choice.
+  - Reduced motion still wins over every level.
+  - Details: `site/js/fx.js` and `docs/02-design.md`.
+- **Easter eggs** live in `site/js/eggs.js` / `site/css/eggs.css` (15 in total; the console's `eggs` command lists them).
+  - Shatter colour cycle (10 fast clicks on empty background: green, pink, cyan, amber, violet, chaos, back to mono).
+  - A Quake-style console (`` ` `` or `~`; on touch, hold empty background 1 s).
+  - Konami overdrive, which unlocks a gold tint.
+  - Typed `matrix`, `hello` and the digest.
+  - YouTube "do a barrel roll" and "askew".
+  - Snake on the 404 page.
+  - Idle screensaver, hex countdown clock, and a few extras.
+- **Colour is allowed inside egg modes only** (the owner asked for the shatter colours). The tint is a multiply layer that resets when the tab closes. Everything else stays black and white.
+- **The ghost** is a hidden AI terminal at `/ghost/`.
+  - **The door:** click the menu's ASCII mask 3 times, long-press the top-left logo on other pages, or type `ghost` in the console. Hints: a boot-log line, the console's help, and a line on the 404 page.
+  - **Backend:** runs on our server (`server/ai.mjs`, `POST /api/ai`, streaming) with the official Anthropic SDK, model `claude-haiku-5-5` (the owner's choice, 2026-10-21) at low effort. Haiku 5.5 has no server-side refusal fallback, so a decline shows as an in-character "can't help with that". If `AI_MODEL` names an Opus, Fable or Sonnet 5.5 model, the fallback is turned on automatically.
+  - **Limits:** 20 requests per visitor per 10 minutes, one stream at a time, burst limits, and `AI_DAILY_MAX` (default 300) per day. The per-visitor limits use a keyed hash of the IP held in memory only.
+  - **Storage:** none. Nothing is logged, and the conversation lives only in the page.
+  - **Without `ANTHROPIC_API_KEY`** the page says "the ghost is asleep".
+- **New storage keys:**
+  - `localStorage`: `fx.tier` (the measured level), `fx.tier.force` (a forced level), `eggs` (found eggs), `eggs.snake` (snake high score)
+  - `sessionStorage`: `fx.tint`

@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https:; style-src 'self' 'unsafe-inline' https: data:; img-src 'self' https: data: blob:; font-src 'self' https: data:; media-src 'self' https: data: blob:; connect-src 'self' https: data: blob:; worker-src 'self' blob: data: https:; frame-src 'self' https: data: blob:; object-src 'none'; base-uri 'self' https:">
 <title>~</title>
-<style>html,body{margin:0;height:100%;background:#000;color:#8f8f8f;font:13px ui-monospace,Menlo,Consolas,monospace}p{padding:16px}</style>
+<style>html,body{margin:0;height:100%;background:#000;color:#8f8f8f;font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em}body>p{position:fixed;inset:0;display:grid;place-items:center;margin:0;padding:16px;text-align:center;text-transform:lowercase}body>p::before{content:"> ";color:#4a4a4a}#g-wait::after{content:"_";color:#fff;animation:b 1.05s steps(1) infinite}@keyframes b{50%{opacity:0}}@media (prefers-reduced-motion:reduce){#g-wait::after{animation:none}}</style>
 <!-- Third-party game code runs here, so this page has the loose CSP and
      nothing else does. It shares this site's origin on purpose so games can
      save progress, which means a game can also read this site's storage. -->
@@ -71,5 +71,5 @@
 })();
 </script>
 </head>
-<body><p>loading</p></body>
+<body><p id="g-wait">loading</p></body>
 </html>

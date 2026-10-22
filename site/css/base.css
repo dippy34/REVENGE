@@ -1,5 +1,6 @@
-/* base.css: tokens, type, page shell and the menu.
-   Strictly black, white and grays. No accent colors anywhere. */
+/* base.css: tokens, type, page shell, the menu and the 404 page.
+   Strictly black, white and grays. No accent colors anywhere.
+   Motion lives in fx.css; this file alone gives a complete, still page. */
 
 @font-face {
   font-family: "M";
@@ -17,8 +18,15 @@
   --mute: #4a4a4a;  /* decoration and disabled items only */
   --line: #1f1f1f;
   --line-2: #383838;
+  --line-3: #5a5a5a;
+  --panel: #070707;
+  --panel-2: #0e0e0e;
   --font: "M", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --ease: cubic-bezier(.2, .7, .2, 1);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-snap: cubic-bezier(.7, 0, .2, 1);
+  --glow: 0 0 1px rgba(255, 255, 255, .55), 0 0 12px rgba(255, 255, 255, .22);
+  --glow-box: 0 0 0 1px rgba(255, 255, 255, .08), 0 0 24px rgba(255, 255, 255, .06);
   --gutter: clamp(16px, 4vw, 40px);
   color-scheme: dark;
 }
@@ -31,6 +39,8 @@ html {
   color: var(--fg);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scrollbar-color: #2c2c2c transparent;
+  scrollbar-width: thin;
 }
 
 body {
@@ -41,14 +51,22 @@ body {
   letter-spacing: .01em;
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  font-variant-ligatures: none;
   overflow-x: hidden;
 }
 
-::selection { background: var(--hi); color: var(--bg); }
+::selection { background: var(--hi); color: var(--bg); text-shadow: none; }
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; color: inherit; letter-spacing: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 1px solid var(--hi); outline-offset: 3px; }
+
+/* thin square scrollbars for engines without scrollbar-color */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2c2c2c; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--line-3); }
+::-webkit-scrollbar-corner { background: transparent; }
 
 /* visually hidden, still read by screen readers */
 .sr {
@@ -72,14 +90,16 @@ button { cursor: pointer; }
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 720px;
+  max-width: 1120px;
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: 20px var(--gutter) 22px;
+  padding: 22px var(--gutter) 24px;
 }
 
 .top {
+  position: relative;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -92,59 +112,219 @@ button { cursor: pointer; }
   align-items: center;
   color: var(--fg);
 }
-.home svg { width: 22px; height: 22px; flex: none; }
-.clock { font-variant-numeric: tabular-nums; }
+.home svg { width: 22px; height: 22px; flex: none; overflow: visible; }
+a.home:hover { color: var(--hi); }
+/* a 40px hit area around the small mark, without moving it */
+a.home { padding: 9px; margin: -9px; }
+.mark-eye { transform-box: fill-box; transform-origin: center; }
+
+.clock {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .06em;
+  white-space: pre;
+}
 
 .stage {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 6vh 0 12vh;
+  padding: 6vh 0 11vh;
 }
 
 /* ---------- title ---------- */
 
+.title { position: relative; z-index: 2; }
+
+/* --tx / --ty (-1..1) come from the pointer via fx.js; without them the
+   title simply sits flat. The first shadow is a faint CRT ghost image that
+   drifts against the tilt, the rest is phosphor bloom. */
 .digest {
   margin: 0;
-  font-size: clamp(44px, 12vw, 104px);
+  font-size: clamp(46px, 11vw, 112px);
   font-weight: 300;
   line-height: 1;
   letter-spacing: .01em;
   white-space: nowrap;
   color: var(--hi);
+  text-shadow:
+    calc(5px - var(--tx, 0) * 7px) calc(3px - var(--ty, 0) * 5px) 0 rgba(255, 255, 255, .07),
+    0 0 1px rgba(255, 255, 255, .7),
+    0 0 18px rgba(255, 255, 255, .26),
+    0 0 46px rgba(255, 255, 255, .12);
+  transform:
+    perspective(1100px)
+    rotateX(calc(var(--ty, 0) * -7deg))
+    rotateY(calc(var(--tx, 0) * 9deg))
+    translate3d(calc(var(--tx, 0) * 6px), calc(var(--ty, 0) * 4px), 0);
+}
+
+.sub {
+  margin: 18px 0 0;
+  font-size: 13px;
+  letter-spacing: .04em;
+  color: var(--dim);
+}
+.sub b { font-weight: 400; color: var(--fg); }
+
+/* ---------- glyph object (canvas drawn by fx.js) ---------- */
+
+.obj {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: -7%;
+  width: min(44vw, 560px, 72vh);
+  aspect-ratio: 1 / 1;
+  transform: translateY(-53%);
+  pointer-events: none;
 }
 
 /* ---------- menu: three words ---------- */
 
 .menu {
-  margin: 40px 0 0;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(100%, 420px);
+  margin: 46px 0 0;
   padding: 0;
   list-style: none;
+  border-top: 1px solid var(--line);
 }
+.menu li { border-bottom: 1px solid var(--line); }
 
+/* Each row: index, word, then an arrow or a lock. On hover / focus a white
+   bar wipes in and inverts whatever it passes over (difference blend inside
+   the row only, so the background never shows through). */
 .item {
   position: relative;
-  display: inline-block;
-  padding: 3px 0 3px 1.3em;
-  font-size: clamp(18px, 2.4vw, 22px);
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 2.6em auto 1fr auto;
+  align-items: center;
+  padding: 8px 12px 8px 10px;
+  font-size: clamp(18px, 2.2vw, 21px);
+  line-height: 1.3;
   color: var(--fg);
   transition: color .16s var(--ease);
 }
-/* a ">" caret slides in on hover / focus */
 .item::before {
-  content: ">";
+  content: "";
   position: absolute;
-  left: 0;
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity .16s var(--ease), transform .16s var(--ease);
+  inset: 0;
+  z-index: 1;
+  background: var(--hi);
+  mix-blend-mode: difference;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform .34s var(--ease-snap);
+  pointer-events: none;
 }
+.item:hover::before,
+.item:focus-visible::before { transform: scaleX(1); }
 .item:hover,
 .item:focus-visible { color: var(--hi); outline: none; }
-.item:hover::before,
-.item:focus-visible::before { opacity: 1; transform: none; }
 
+.item-idx {
+  font-size: 11px;
+  letter-spacing: .1em;
+  color: #707070; /* decoration, but still readable numbering */
+  font-variant-numeric: tabular-nums;
+  transition: color .16s var(--ease);
+}
+.item:hover .item-idx,
+.item:focus-visible .item-idx { color: var(--dim); }
+
+/* block caret after the word while the row is selected */
+.label::after {
+  content: "";
+  display: inline-block;
+  width: .52em;
+  height: .95em;
+  margin-left: .22em;
+  vertical-align: -.1em;
+  background: currentColor;
+  opacity: 0;
+}
+.item:hover .label::after,
+.item:focus-visible .label::after { opacity: 1; }
+
+.item-end {
+  grid-column: 4;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  color: var(--dim);
+  transition: transform .3s var(--ease-out), color .16s var(--ease);
+}
+.item-end svg { width: 100%; height: 100%; }
+.item:hover .item-end,
+.item:focus-visible .item-end { color: var(--hi); transform: translateX(3px); }
+
+/* locked: dim, hatched instead of inverted, no caret */
 .item.is-locked { color: #5c5c5c; cursor: not-allowed; }
+.item.is-locked::before {
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, .08) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, rgba(0, 0, 0, .85), rgba(0, 0, 0, .6));
+  border-left: 2px solid var(--line-3);
+  mix-blend-mode: normal;
+  z-index: -1;
+}
 .item.is-locked:hover,
 .item.is-locked:focus-visible { color: var(--dim); }
+.item.is-locked .label::after { display: none; }
+.item.is-locked .item-end { color: var(--mute); }
+.item.is-locked:hover .item-end,
+.item.is-locked:focus-visible .item-end { color: var(--dim); transform: none; }
+
+/* fingers: rows at least 44px tall */
+@media (pointer: coarse) {
+  .item { padding-top: 11px; padding-bottom: 11px; }
+}
+
+/* shared opt-in for any page: [data-hit] grows a small control's touch
+   target to at least 40x40 with a transparent ::after, so the visible box
+   keeps its size. The element must already be positioned (relative or
+   absolute) and must not use its own ::after. */
+@media (pointer: coarse) {
+  [data-hit]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: 100%;
+    min-width: 40px;
+    min-height: 40px;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* ---------- 404 ---------- */
+
+.is-lost .digest { font-size: clamp(72px, 22vw, 210px); letter-spacing: .02em; }
+.is-lost .menu { width: min(100%, 320px); }
+
+/* ---------- phones ---------- */
+
+@media (max-width: 720px) {
+  .stage { padding: 0 0 7vh; }
+  .obj {
+    position: relative;
+    top: auto;
+    right: auto;
+    align-self: center;
+    width: min(82vw, 330px, 42vh);
+    margin: 0 0 -1vh;
+    transform: none;
+  }
+  .menu { margin-top: 34px; }
+}
+
+@media (max-height: 520px) and (min-width: 721px) {
+  .stage { padding: 3vh 0 4vh; }
+  .menu { margin-top: 26px; }
+}

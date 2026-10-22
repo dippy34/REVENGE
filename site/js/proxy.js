@@ -10,7 +10,9 @@
 
    The engine is chosen from the browser; the pill in the top bar (or
    ?engine=scramjet / ?engine=rammerhead) overrides it and is remembered.
-   Works only on the server in server/, not on a static host. */
+   Works only on the server in server/, not on a static host. The terminal
+   look (decoding address, loading line, quick tiles) is decoration on top
+   and calms down under reduced motion. */
 (function () {
   'use strict';
 
@@ -37,6 +39,8 @@
   var fwd = document.getElementById('p-fwd');
   var reload = document.getElementById('p-reload');
   var toastEl = document.getElementById('p-toast');
+  var title = document.getElementById('p-h1');
+  var crumb = document.getElementById('p-crumb-h');
 
   var frame = null;
   var pending = null; // a url asked for before we were ready
@@ -46,17 +50,74 @@
     return null;
   }
 
+  function calm() {
+    if (window.fx && window.fx.reduced) return window.fx.reduced();
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  // the toast's lower edge drains while it is up; is-a / is-b restart it
   var toastTimer;
   function toast(msg) {
     toastEl.textContent = msg;
-    toastEl.classList.add('on');
+    toastEl.className = 'p-toast on ' + (toastEl.classList.contains('is-a') ? 'is-b' : 'is-a');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toastEl.classList.remove('on'); }, 2600);
   }
 
-  function say(msg, bad) {
+  // busy shows a spinner glyph and a caret; bad turns it into an error block
+  function say(msg, bad, busy) {
     status.textContent = msg;
     status.classList.toggle('is-bad', !!bad);
+    status.classList.toggle('is-busy', !!busy);
+    start.classList.toggle('is-bad', !!bad);
+  }
+
+  /* ---------- address bar ---------- */
+
+  // A new address prints in from noise, left to right, unless the field
+  // is being edited. Focusing it settles the text at once.
+  var NOISE = '0123456789abcdef#%&*+=<>/\\|_-:;';
+  var addr = '', addrRaf = 0;
+  function settleAddr() {
+    if (!addrRaf) return;
+    cancelAnimationFrame(addrRaf);
+    addrRaf = 0;
+    input.value = addr;
+  }
+  // the toolbar crumb reads ~/p/<host> while a site is open
+  function setCrumb(url) {
+    var host = '';
+    try { host = url ? new URL(url).hostname.replace(/^www\./, '') : ''; } catch (e) { /* not a url */ }
+    crumb.textContent = host ? '/' + host : '';
+  }
+
+  function showAddr(url) {
+    settleAddr();
+    addr = url;
+    setCrumb(url);
+    if (calm() || url.length > 180) { input.value = url; return; }
+    var t0 = performance.now(), last = 0;
+    var dur = Math.min(1000, Math.max(420, url.length * 24));
+    (function frame(t) {
+      if (t - last >= 40) {
+        last = t;
+        var k = Math.floor((t - t0) / dur * url.length), out = url.slice(0, Math.max(0, k));
+        for (var i = Math.max(0, k); i < url.length; i++) {
+          out += i < k + 14 ? NOISE.charAt((Math.random() * NOISE.length) | 0) : '';
+        }
+        input.value = out;
+        if (k >= url.length) { addrRaf = 0; input.value = url; return; }
+      }
+      addrRaf = requestAnimationFrame(frame);
+    })(t0);
+  }
+
+  // a light runs along the toolbar's lower edge until the frame loads
+  var loadTimer;
+  function loading(on, ms) {
+    clearTimeout(loadTimer);
+    root.classList.toggle('p-loading', !!on);
+    if (on) loadTimer = setTimeout(function () { root.classList.remove('p-loading'); }, ms || 20000);
   }
 
   // "cats" -> search, "example.com" -> https://example.com
@@ -128,7 +189,7 @@
   var scramjetEngine = {
     check: tryKey,
     connect: function (key) { return boot(key); },
-    open: function (url) { try { frame.go(url); } catch (e) { toast('could not open that address'); } },
+    open: function (url) { try { frame.go(url); } catch (e) { loading(false); toast('could not open that address'); } },
     back: function () { if (frame) frame.back(); },
     forward: function () { if (frame) frame.forward(); },
     reload: function () { if (frame) frame.reload(); },
@@ -193,7 +254,7 @@
       });
     },
     open: function (url) {
-      rhSession().then(function (id) { iframe.src = '/' + id + '/' + url; }, function (e) { toast(e.message || 'could not open that address'); });
+      rhSession().then(function (id) { iframe.src = '/' + id + '/' + url; }, function (e) { loading(false); toast(e.message || 'could not open that address'); });
     },
     back: function () { try { iframe.contentWindow.history.back(); } catch (e) { /* cross-origin or gone */ } },
     forward: function () { try { iframe.contentWindow.history.forward(); } catch (e) { /* cross-origin or gone */ } },
@@ -238,7 +299,10 @@
         plugins: [
           new u.HttpCachePlugin(),
           new u.UrlWatcherPlugin(function (url) {
-            if (document.activeElement !== input) input.value = url;
+            url = String(url);
+            if (document.activeElement === input || url === addr) return;
+            showAddr(url);
+            if (!root.classList.contains('p-loading')) loading(true, 1200);
           }),
           // "open in new tab" and window.open come back into this shell
           new u.CatchEscapedLinksPlugin(function (url) {
@@ -252,32 +316,94 @@
 
   function showStart() {
     root.classList.remove('browsing');
+    loading(false);
     iframe.hidden = true;
     iframe.removeAttribute('src');
     start.hidden = false;
     back.disabled = fwd.disabled = reload.disabled = true;
+    settleAddr();
+    addr = '';
+    setCrumb('');
     input.value = '';
     input.focus();
+    if (window.fx) { window.fx.rain.resume(); window.fx.decode(title, { duration: 520 }); }
   }
 
   function open(raw) {
     var url = toUrl(raw);
     if (!url) return;
-    input.value = url;
     input.blur();
+    showAddr(url);
     if (!engine.ready()) { pending = url; return; }
     start.hidden = true;
     iframe.hidden = false;
     root.classList.add('browsing');
+    if (window.fx) window.fx.rain.pause();
     back.disabled = fwd.disabled = reload.disabled = false;
+    loading(true);
     engine.open(url);
   }
 
+  /* ---------- quick links ---------- */
+
+  function piece(tag, cls, text, parent) {
+    var el = document.createElement(tag);
+    el.className = cls;
+    if (text) el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  // the same line arrow the menu rows use
+  var SVG = 'http://www.w3.org/2000/svg';
+  function arrow(parent) {
+    var svg = document.createElementNS(SVG, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.6');
+    var path = document.createElementNS(SVG, 'path');
+    path.setAttribute('d', 'M3 12h16M13.5 6.5 19 12l-5.5 5.5');
+    svg.appendChild(path);
+    parent.appendChild(svg);
+  }
+
+  // terminal tiles: index, [ name ], host, arrow; keys 1-6 open them
+  function buildQuick() {
+    QUICK.forEach(function (q, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'p-q';
+      b.setAttribute('aria-label', q[0]);
+      b.setAttribute('data-cursor', 'open');
+      b.style.setProperty('--i', i);
+      piece('span', 'p-q-i', (i < 9 ? '0' : '') + (i + 1), b).setAttribute('aria-hidden', 'true');
+      var n = piece('span', 'p-q-n', '', b);
+      piece('span', 'p-q-b', '[', n);
+      piece('span', 'p-q-t', q[0], n).setAttribute('data-scramble', '');
+      piece('span', 'p-q-b', ']', n);
+      piece('span', 'p-q-h', new URL(q[1]).hostname.replace(/^www\./, ''), b);
+      var a = piece('span', 'p-q-a', '', b);
+      a.setAttribute('aria-hidden', 'true');
+      arrow(a);
+      b.addEventListener('click', function () { open(q[1]); });
+      quick.appendChild(b);
+    });
+  }
+
+  function showQuick() {
+    quick.hidden = false;
+    if (!window.fx) return;
+    var names = quick.querySelectorAll('.p-q-t');
+    for (var i = 0; i < names.length; i++) window.fx.decode(names[i], { delay: 120 + i * 70, duration: 420 });
+    window.fx.glitch(title);
+  }
+
   function connect(key) {
-    say('connecting');
+    say('connecting', false, true);
     return engine.connect(key).then(function () {
       say('search, or type a web address above.');
-      quick.hidden = false;
+      showQuick();
       if (pending) { var p = pending; pending = null; open(p); }
     }, function (err) {
       say('the proxy could not start: ' + (err && err.message || 'unknown error'), true);
@@ -287,19 +413,17 @@
   function askKey(wrong) {
     keyForm.hidden = false;
     say(wrong ? 'that key did not work.' : 'locked', !!wrong);
+    keyForm.classList.remove('is-wrong');
+    if (wrong) {
+      void keyForm.offsetWidth; // restart the shake
+      keyForm.classList.add('is-wrong');
+    }
     keyIn.value = '';
     keyIn.focus();
   }
 
   function init() {
-    QUICK.forEach(function (q) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'p-btn';
-      b.textContent = q[0];
-      b.addEventListener('click', function () { open(q[1]); });
-      quick.appendChild(b);
-    });
+    buildQuick();
 
     if (engine === scramjetEngine && (!('serviceWorker' in navigator) || !window.isSecureContext)) {
       say('this browser cannot run the standard mode here. try safari mode (top right).', true);
@@ -328,7 +452,7 @@
     e.preventDefault();
     var k = keyIn.value.trim();
     if (!k) return;
-    say('checking');
+    say('checking', false, true);
     engine.check(k).then(function (ok) {
       if (!ok) return askKey(true);
       store('p-key', k);
@@ -337,11 +461,26 @@
     }, function (e) { say(e.message || 'could not check the key', true); });
   });
 
-  form.addEventListener('submit', function (e) { e.preventDefault(); open(input.value); });
-  input.addEventListener('focus', function () { input.select(); });
-  back.addEventListener('click', function () { engine.back(); });
-  fwd.addEventListener('click', function () { engine.forward(); });
-  reload.addEventListener('click', function () { engine.reload(); });
+  form.addEventListener('submit', function (e) { e.preventDefault(); settleAddr(); open(input.value); });
+  input.addEventListener('focus', function () { settleAddr(); input.select(); });
+  iframe.addEventListener('load', function () { loading(false); });
+  back.addEventListener('click', function () { if (engine.ready()) { loading(true, 8000); engine.back(); } });
+  fwd.addEventListener('click', function () { if (engine.ready()) { loading(true, 8000); engine.forward(); } });
+  reload.addEventListener('click', function () { if (engine.ready()) { loading(true); engine.reload(); } });
+
+  // on the start screen: 1-6 open a quick link, / jumps to the address bar
+  document.addEventListener('keydown', function (e) {
+    if (start.hidden || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    if (e.key === '/') { e.preventDefault(); input.focus(); return; }
+    var n = Number(e.key);
+    if (!quick.hidden && n >= 1 && n <= QUICK.length) {
+      var b = quick.children[n - 1];
+      b.focus();
+      open(QUICK[n - 1][1]);
+    }
+  });
   document.getElementById('p-home').addEventListener('click', showStart);
   document.getElementById('p-full').addEventListener('click', function () {
     var el = iframe.hidden ? root : iframe;
@@ -354,7 +493,7 @@
   if (go) {
     history.replaceState(null, '', location.pathname);
     pending = toUrl(go);
-    input.value = pending;
+    addr = input.value = pending;
   }
   init();
 })();

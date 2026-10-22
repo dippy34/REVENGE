@@ -1,5 +1,6 @@
-/* menu.js: keyboard control and locked entries on the index.
-   Without JS the live entries are plain links and still work. */
+/* menu.js: keyboard control and locked entries on the index (and the
+   single way-back row on the 404). Without JS the entries are plain links
+   and still work. */
 (function () {
   'use strict';
 
@@ -69,6 +70,11 @@
   });
 
   items.forEach(function (item) {
+    // one highlighted row at a time: the mouse takes over from the keyboard
+    item.addEventListener('pointerenter', function (e) {
+      var cur = document.activeElement;
+      if (e.pointerType === 'mouse' && cur !== item && items.indexOf(cur) >= 0) cur.blur();
+    });
     if (!item.classList.contains('is-locked')) return;
     item.addEventListener('click', function () { deny(item); });
     item.addEventListener('keydown', function (e) {
@@ -77,6 +83,8 @@
         deny(item);
       }
     });
-    item.addEventListener('animationend', function () { item.classList.remove('is-denied'); });
+    item.addEventListener('animationend', function (e) {
+      if (e.animationName === 'denied') item.classList.remove('is-denied');
+    });
   });
 })();

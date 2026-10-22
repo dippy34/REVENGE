@@ -1,0 +1,617 @@
+/* eggs.css: the hidden extras (eggs.js). Nothing here shows until a
+   visitor finds something. Colour appears only inside an egg the visitor
+   triggered (the tints, the matrix, the gold); everything else stays
+   black, white and gray. Reduced motion: no shaking, no flashing, calm
+   fades instead.
+
+   stacking, on top of fx.css:
+   90 cracks / shards · 91 static · 92 flash · 93 console
+   94 konami flood · 95 tint, degauss · 96 matrix, whispers
+   97 screensaver · 98 reboot
+   (100 cursor) · 110 toasts */
+
+/* ---------- shared ---------- */
+
+.egg-layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* double-tap zoom would eat fast taps on the background: off only while
+   a run of cracks is going (eggs.js sets the class on the first one and
+   drops it when the glass heals); pinch zoom and scrolling are untouched */
+html.egg-tapping { touch-action: manipulation; }
+
+/* the small hex logos open a door when held: no callout menu, no text
+   selection while the finger rests on them */
+.yt-logo, .g-back, .s-back, .p-logo, .is-lost a.home {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ---------- toasts ---------- */
+
+.egg-toasts {
+  position: fixed;
+  left: 28px;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+.egg-toast {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  padding: 9px 14px 10px;
+  overflow: hidden;
+  font: 400 12px/1.5 var(--font, monospace);
+  letter-spacing: .04em;
+  color: var(--fg, #e8e8e8);
+  background: rgba(6, 6, 6, .94);
+  border: 1px solid var(--line-2, #383838);
+  box-shadow: var(--glow-box, none), 0 12px 32px rgba(0, 0, 0, .7);
+  animation: egg-toast-in .32s var(--ease-out, ease-out) both;
+}
+.egg-toast b { font-weight: 400; color: var(--hi, #fff); text-shadow: var(--glow, none); }
+.egg-toast em { font-style: normal; color: var(--dim, #8f8f8f); }
+.egg-toast::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  background: var(--hi, #fff);
+  transform-origin: 0 50%;
+  animation: egg-drain var(--life, 3.6s) linear both;
+}
+.egg-toast.is-out { opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .3s; }
+
+@keyframes egg-toast-in {
+  from { opacity: 0; transform: translateY(10px); clip-path: inset(0 100% 0 0); }
+  to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+}
+@keyframes egg-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+@media (max-width: 720px) {
+  .egg-toasts { left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); align-items: stretch; }
+}
+
+/* ---------- tint ---------- */
+
+/* multiply: black stays black, white turns into the colour */
+.egg-tint {
+  z-index: 95;
+  mix-blend-mode: multiply;
+  background-color: #fff;
+  opacity: 0;
+  transition: opacity .7s var(--ease, ease), background-color .7s var(--ease, ease);
+}
+.egg-tint.is-on { opacity: 1; }
+.egg-tint.is-now { transition: none; }
+.egg-tint[data-tint="green"] { background-color: #3dff7a; }
+.egg-tint[data-tint="pink"] { background-color: #ff3fa4; }
+.egg-tint[data-tint="cyan"] { background-color: #2fe4ff; }
+.egg-tint[data-tint="amber"] { background-color: #ffb21e; }
+.egg-tint[data-tint="violet"] { background-color: #a671ff; }
+.egg-tint[data-tint="gold"] { background-color: #ffd04a; }
+.egg-tint[data-tint="signal"] { background-color: #ff6a4d; } /* solvers only (a verified certificate) */
+.egg-tint[data-tint="chaos"] {
+  background-color: hsl(0, 100%, 64%); /* if the animation is cut short */
+  animation: egg-hue 16s linear infinite;
+}
+/* low: the same slow cycle, repainted about every 1.5 s instead of
+   every frame */
+html[data-fx="low"] .egg-tint[data-tint="chaos"] { animation-duration: 48s; animation-timing-function: steps(32); }
+
+/* the end of the cycle: a degauss ripple through the hues into white */
+.egg-degauss {
+  z-index: 95;
+  mix-blend-mode: multiply;
+  animation: egg-degauss .9s var(--ease-out, ease-out) both;
+}
+@keyframes egg-degauss {
+  0% { background-color: hsl(300, 100%, 66%); opacity: 1; }
+  18% { background-color: hsl(180, 100%, 58%); }
+  36% { background-color: hsl(60, 100%, 58%); }
+  54% { background-color: hsl(240, 100%, 72%); opacity: .8; }
+  72% { background-color: hsl(120, 100%, 60%); opacity: .45; }
+  100% { background-color: #fff; opacity: 0; }
+}
+html.egg-wobble body > main,
+html.egg-wobble body > header,
+html.egg-wobble body > .shell { animation: egg-wobble .9s var(--ease-out, ease-out) both; }
+@keyframes egg-wobble {
+  0% { transform: scale(1.02, .97) skewX(1.4deg); }
+  20% { transform: scale(.985, 1.02) skewX(-1.1deg); }
+  40% { transform: scale(1.01, .99) skewX(.7deg); }
+  60% { transform: scale(.996, 1.006) skewX(-.35deg); }
+  80% { transform: scale(1.002, .999) skewX(.12deg); }
+  100% { transform: none; }
+}
+
+@keyframes egg-hue {
+  0% { background-color: hsl(0, 100%, 64%); }
+  16.6% { background-color: hsl(60, 100%, 58%); }
+  33.3% { background-color: hsl(120, 100%, 60%); }
+  50% { background-color: hsl(180, 100%, 58%); }
+  66.6% { background-color: hsl(240, 100%, 72%); }
+  83.3% { background-color: hsl(300, 100%, 66%); }
+  100% { background-color: hsl(360, 100%, 64%); }
+}
+
+/* ---------- shatter ---------- */
+
+.egg-glass { z-index: 90; overflow: visible; }
+.egg-glass path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: egg-crack .2s var(--ease-out, ease-out) forwards;
+}
+.egg-glass .k-shade { stroke: rgba(0, 0, 0, .7); stroke-width: 3; }
+.egg-glass .k-glow { stroke: rgba(255, 255, 255, .16); stroke-width: 4; }
+.egg-glass .k-line { stroke: rgba(255, 255, 255, .88); stroke-width: 1; }
+.egg-glass .k-web { stroke: rgba(255, 255, 255, .5); stroke-width: .8; }
+.egg-glass circle { fill: rgba(255, 255, 255, .85); }
+.egg-glass.is-heal { opacity: 0; transition: opacity .9s var(--ease, ease); }
+.egg-glass.is-jolt { animation: egg-jolt .12s steps(2) both; }
+
+@keyframes egg-crack { to { stroke-dashoffset: 0; } }
+@keyframes egg-jolt {
+  0% { transform: translate(2px, -1px); }
+  50% { transform: translate(-2px, 1px); }
+  100% { transform: none; }
+}
+
+.egg-shards { z-index: 90; }
+.egg-static {
+  z-index: 91;
+  image-rendering: pixelated;
+  opacity: .55;
+  mix-blend-mode: screen;
+}
+.egg-flash {
+  z-index: 92;
+  background: #fff;
+  opacity: 0;
+  animation: egg-flash .5s var(--ease-out, ease-out) both;
+}
+@keyframes egg-flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+
+/* a heavy shake on the page itself, never on body (fixed layers would
+   come loose) */
+html.egg-quake body > main,
+html.egg-quake body > header,
+html.egg-quake body > .shell { animation: egg-quake .42s steps(6) both; }
+@keyframes egg-quake {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-9px, 4px) skewX(2deg); }
+  40% { transform: translate(8px, -5px); }
+  60% { transform: translate(-6px, 3px) skewX(-1.5deg); }
+  80% { transform: translate(4px, -2px); }
+  100% { transform: none; }
+}
+
+/* ---------- reboot ---------- */
+
+.egg-reboot {
+  z-index: 98;
+  display: grid;
+  place-items: center;
+  background: #000;
+  opacity: 0;
+  transition: opacity .16s linear;
+}
+.egg-reboot.is-on { opacity: 1; }
+.egg-reboot.is-out { opacity: 0; transition: opacity .6s var(--ease, ease); }
+.egg-reboot::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: #fff;
+  box-shadow: 0 0 18px 3px rgba(255, 255, 255, .55);
+  transform: scaleX(0);
+}
+.egg-reboot.is-on::before { animation: egg-line .5s var(--ease-snap, ease) both; }
+.egg-reboot p {
+  position: relative;
+  margin: 70px 0 0;
+  font: 400 12px/1.7 var(--font, monospace);
+  letter-spacing: .08em;
+  color: var(--dim, #8f8f8f);
+  text-align: center;
+  white-space: pre;
+}
+.egg-reboot p b { font-weight: 400; color: var(--hi, #fff); text-shadow: var(--glow, none); }
+@keyframes egg-line {
+  0% { transform: scaleX(0); opacity: 1; }
+  60% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: .15; }
+}
+
+/* ---------- console ---------- */
+
+.egg-con {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 93;
+  display: flex;
+  flex-direction: column;
+  height: min(46vh, 440px);
+  min-height: 220px;
+  font: 400 13px/1.55 var(--font, monospace);
+  color: var(--fg, #e8e8e8);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 3px),
+    #030303;
+  border-bottom: 1px solid var(--line-3, #5a5a5a);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .06), 0 18px 60px rgba(0, 0, 0, .85);
+  transform: translateY(-104%);
+  visibility: hidden;
+  transition: transform .26s var(--ease-snap, ease), visibility 0s linear .26s;
+}
+.egg-con.is-open {
+  transform: none;
+  visibility: visible;
+  transition: transform .3s var(--ease-out, ease-out), visibility 0s;
+}
+.egg-con-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px var(--gutter, 16px) 8px;
+  font-size: 11px;
+  letter-spacing: .1em;
+  color: var(--dim, #8f8f8f);
+  border-bottom: 1px solid var(--line, #1f1f1f);
+}
+.egg-con-head b { font-weight: 400; color: var(--hi, #fff); }
+.egg-con-log {
+  flex: 1;
+  margin: 0;
+  padding: 12px var(--gutter, 16px) 6px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overscroll-behavior: contain;
+}
+.egg-con-log div { min-height: 1.55em; }
+.egg-con-log .is-in { color: var(--hi, #fff); }
+.egg-con-log .is-dim { color: var(--dim, #8f8f8f); }
+.egg-con-log .is-hi { color: var(--hi, #fff); text-shadow: var(--glow, none); }
+.egg-con-log .is-bad { color: #bdbdbd; }
+/* commands to tap, for screens without a keyboard */
+.egg-con-chips { display: none; }
+@media (pointer: coarse) {
+  .egg-con-chips {
+    display: flex;
+    gap: 6px;
+    padding: 8px var(--gutter, 16px) 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-top: 1px solid var(--line, #1f1f1f);
+  }
+  .egg-con-chips::-webkit-scrollbar { display: none; }
+}
+.egg-con-chips button {
+  flex: none;
+  margin: 0;
+  padding: 7px 11px;
+  font: 400 12px/1 var(--font, monospace);
+  letter-spacing: .05em;
+  color: var(--fg, #e8e8e8);
+  background: #0a0a0a;
+  border: 1px solid var(--line-2, #383838);
+  border-radius: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.egg-con-chips button:active { color: #000; background: var(--hi, #fff); border-color: var(--hi, #fff); }
+.egg-con-chips button:focus-visible { outline: 1px solid var(--hi, #fff); outline-offset: 2px; }
+.egg-con-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px var(--gutter, 16px) 12px;
+  border-top: 1px solid var(--line, #1f1f1f);
+}
+.egg-con-row span { color: var(--hi, #fff); text-shadow: var(--glow, none); }
+.egg-con-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+  font: inherit;
+  color: var(--hi, #fff);
+  caret-color: var(--hi, #fff);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  border-radius: 0;
+}
+.egg-con-row input:focus-visible { outline: 0; }
+
+/* ---------- canvases: matrix, flood, screensaver ---------- */
+
+.egg-rain {
+  z-index: 94;
+  opacity: 0;
+  transition: opacity .9s var(--ease, ease);
+}
+.egg-rain.is-on { opacity: 1; }
+/* the matrix keeps its green: above the tint, under toasts and the saver */
+.egg-rain.is-top { z-index: 96; }
+
+.egg-saver {
+  z-index: 97;
+  background: rgba(0, 0, 0, .88);
+  opacity: 0;
+  transition: opacity 1.4s var(--ease, ease);
+}
+.egg-saver.is-on { opacity: 1; }
+.egg-saver.is-out { opacity: 0; transition: opacity .18s linear; }
+.egg-saver canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- ghost door ---------- */
+
+/* an invisible circle over the sleeping mask: clicks land here instead of
+   passing through to the background, and the cursor label asks "?" */
+.egg-mask {
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.egg-glyph {
+  position: fixed;
+  z-index: 96;
+  margin: -12px 0 0 -7px;
+  font: 500 22px/1 var(--font, monospace);
+  color: var(--hi, #fff);
+  text-shadow: 0 0 1px #fff, 0 0 10px rgba(255, 255, 255, .7), 0 0 22px rgba(255, 255, 255, .35);
+  pointer-events: none;
+  animation: egg-float 1.3s var(--ease-out, ease-out) both;
+}
+/* the sleeping mask's snore: smaller, fainter, slower */
+.egg-glyph.is-snore {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--dim, #8f8f8f);
+  text-shadow: 0 0 8px rgba(255, 255, 255, .25);
+  animation-duration: 2.6s;
+}
+@keyframes egg-float {
+  0% { opacity: 0; transform: translate(0, 6px) scale(.7); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 10px), -54px) scale(1.15); }
+}
+
+.egg-whisper {
+  position: fixed;
+  z-index: 96;
+  margin: 0;
+  padding: 3px 9px;
+  font: 400 14px/1.4 var(--font, monospace);
+  letter-spacing: .06em;
+  background: rgba(0, 0, 0, .82);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .1);
+  color: var(--hi, #fff);
+  text-shadow: var(--glow, none);
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: egg-whisper 2.4s var(--ease-out, ease-out) both;
+}
+.egg-whisper.is-soft {
+  font-size: 12px;
+  color: var(--fg, #e8e8e8);
+  animation-duration: 1.4s;
+}
+@keyframes egg-whisper {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* the logo's eyes open while it is held (yt / games / stats / proxy / 404) */
+.egg-hold svg { transition: filter 1.5s linear; filter: drop-shadow(0 0 4px rgba(255, 255, 255, .8)); }
+html .egg-hold .eyes,
+html .egg-hold path + path {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: egg-eyes 1.5s linear both;
+}
+@keyframes egg-eyes {
+  0% { transform: scaleY(1); }
+  100% { transform: scaleY(2.6); }
+}
+.egg-awake svg { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px rgba(255, 255, 255, .6)); }
+
+/* a wink: on the menu the right eye is its own path */
+html.js .egg-wink .mark-eye + .mark-eye,
+html.js .egg-wink .eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: egg-wink .5s steps(3) both;
+}
+@keyframes egg-wink {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(.1); }
+}
+
+/* the 404's hint, barely there */
+.egg-hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: #3c3c3c;
+}
+
+/* ---------- typed digest: the fake crack ---------- */
+
+.egg-crack {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  margin: 0;
+  font: 400 12px/1.6 var(--font, monospace);
+  letter-spacing: .05em;
+  color: var(--dim, #8f8f8f);
+  white-space: pre;
+}
+.egg-crack b { font-weight: 400; color: var(--hi, #fff); text-shadow: var(--glow, none); }
+/* pages without a big title: the same log in a floating box */
+.egg-crack.is-float {
+  position: fixed;
+  left: 50%;
+  top: 40%;
+  z-index: 96;
+  margin: 0;
+  padding: 16px 20px;
+  background: rgba(4, 4, 4, .95);
+  border: 1px solid var(--line-2, #383838);
+  box-shadow: var(--glow-box, none), 0 18px 50px rgba(0, 0, 0, .8);
+  transform: translate(-50%, -50%);
+}
+
+/* ---------- clock backwards ---------- */
+
+.clock.egg-rev > span { display: none; }
+.egg-clk { font-weight: 400; color: var(--hi, #fff); text-shadow: var(--glow, none); }
+
+/* ---------- jelly title ---------- */
+
+.egg-jelly { animation: egg-jelly .95s var(--ease-out, ease-out) both; }
+@keyframes egg-jelly {
+  0% { scale: 1 1; }
+  14% { scale: 1.16 .82; }
+  30% { scale: .86 1.14; }
+  46% { scale: 1.08 .93; }
+  62% { scale: .96 1.04; }
+  80% { scale: 1.02 .99; }
+  100% { scale: 1 1; }
+}
+
+/* ---------- youtube: barrel roll, askew ---------- */
+
+html.egg-roll { animation: egg-roll 1.1s var(--ease-snap, ease) both; }
+@keyframes egg-roll { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+html.egg-askew { transform: rotate(1.6deg); transition: transform .5s var(--ease-out, ease-out); }
+
+/* ---------- rm -rf / ---------- */
+
+html.egg-rm body > main,
+html.egg-rm body > header,
+html.egg-rm body > .shell { opacity: .08; filter: blur(1.5px); transition: opacity .9s steps(6), filter .9s; }
+/* the rain and the mask go too (eggs.js also pauses the rain) */
+html.egg-rm #rain,
+html.egg-rm canvas[data-obj] { opacity: 0; visibility: hidden; transition: opacity .6s steps(4), visibility 0s linear .6s; }
+
+/* ---------- 404 snake ---------- */
+
+.egg-snake {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font: 400 14px/1.15 var(--font, monospace);
+  color: var(--fg, #e8e8e8);
+  touch-action: none;
+}
+.egg-snake-top,
+.egg-snake-foot {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: .1em;
+  color: var(--dim, #8f8f8f);
+  white-space: pre;
+}
+.egg-snake-foot { max-width: 100%; white-space: normal; text-align: center; }
+.egg-snake-top b { font-weight: 400; color: var(--hi, #fff); text-shadow: var(--glow, none); }
+.egg-snake pre {
+  margin: 0;
+  padding: 8px 10px;
+  font: inherit;
+  letter-spacing: 0;
+  white-space: pre;
+  color: var(--fg, #e8e8e8);
+  background: rgba(0, 0, 0, .82);
+  box-shadow: var(--glow-box, none);
+  text-shadow: 0 0 6px rgba(255, 255, 255, .25);
+}
+.egg-snake pre b {
+  font-weight: 700;
+  color: var(--hi, #fff);
+  text-shadow: 0 0 1px #fff, 0 0 8px rgba(255, 255, 255, .9), 0 0 16px rgba(255, 255, 255, .5);
+}
+.egg-snake.is-over pre { color: var(--dim, #8f8f8f); }
+.egg-hide { visibility: hidden; }
+
+@media (max-width: 720px) {
+  .egg-snake { font-size: 12px; }
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .egg-toast { animation: none; }
+  .egg-toast::after { animation: none; transform: scaleX(.5); }
+  .egg-glass path { animation: none; stroke-dashoffset: 0; }
+  .egg-glass.is-jolt,
+  html.egg-quake body > main,
+  html.egg-quake body > header,
+  html.egg-quake body > .shell,
+  html.egg-roll { animation: none; }
+  .egg-flash { display: none; }
+  .egg-reboot { transition: opacity .5s var(--ease, ease); }
+  .egg-reboot.is-on::before { animation: none; transform: scaleX(1); opacity: .2; box-shadow: none; }
+  .egg-con,
+  .egg-con.is-open { transition: none; }
+  /* fx.css cuts every animation to its last frame here, and these end
+     invisible: shown still instead, eggs.js removes them on a timer */
+  .egg-glyph,
+  .egg-whisper { animation: none; }
+  html .egg-hold .eyes,
+  html .egg-hold path + path,
+  html.js .egg-wink .mark-eye + .mark-eye,
+  html.js .egg-wink .eyes,
+  .egg-jelly { animation: none; }
+  /* the motion kill in fx.css would end the hue cycle at once: a still
+     rainbow instead (multiply handles a gradient as well as a colour) */
+  .egg-tint[data-tint="chaos"],
+  html[data-fx="low"] .egg-tint[data-tint="chaos"] {
+    animation: none;
+    background: linear-gradient(115deg, hsl(0, 100%, 64%), hsl(60, 100%, 58%), hsl(120, 100%, 60%), hsl(180, 100%, 58%), hsl(240, 100%, 72%), hsl(300, 100%, 66%));
+  }
+  .egg-degauss { display: none; }
+  html.egg-wobble body > main,
+  html.egg-wobble body > header,
+  html.egg-wobble body > .shell { animation: none; }
+  html.egg-askew { transition: none; }
+  html.egg-rm body > main,
+  html.egg-rm body > header,
+  html.egg-rm body > .shell { filter: none; transition: opacity .6s linear; }
+}

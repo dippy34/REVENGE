@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-page="ghost">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src 'self'; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'">
+<meta name="color-scheme" content="dark">
+<title>~/ghost</title>
+<link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/fx.css">
+<link rel="stylesheet" href="../css/ghost.css">
+<script src="../js/early.js"></script>
+<script src="../js/fx.js" defer></script>
+<script src="../js/ghost.js" defer></script>
+<script src="../js/hunt.js" defer></script>
+<script src="../js/hit.js" defer></script>
+</head>
+<body>
+<canvas id="rain" aria-hidden="true"></canvas>
+<div class="fx fx-vignette" aria-hidden="true"></div>
+<canvas class="obj gh-obj" data-obj="mark" aria-hidden="true"></canvas>
+
+<main class="gh" id="gh">
+  <header class="gh-top">
+    <a class="gh-back" id="gh-back" href="../" aria-label="back to menu" data-cursor="leave">
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path class="hex" d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path class="eyes" d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+      <span class="gh-path">~/<b>ghost</b></span>
+    </a>
+    <span class="gh-state" id="gh-state" data-state="wait"><i aria-hidden="true"></i><span id="gh-state-t">tuning</span></span>
+  </header>
+
+  <section class="gh-log" id="gh-log" role="log" aria-live="polite" aria-label="conversation with the ghost" tabindex="0">
+    <noscript><p class="gh-line">&gt; the ghost needs javascript to speak.</p></noscript>
+  </section>
+
+  <form class="gh-form" id="gh-form" autocomplete="off">
+    <label class="gh-prompt" for="gh-in"><span aria-hidden="true">&gt;</span><span class="sr">message to the ghost</span></label>
+    <textarea class="gh-in" id="gh-in" name="m" rows="1" maxlength="4000" placeholder="say something" enterkeyhint="send" spellcheck="true" disabled></textarea>
+    <span class="gh-count" id="gh-count" aria-live="polite" hidden></span>
+    <button class="gh-send" id="gh-send" type="submit" data-cursor="send" disabled><span id="gh-send-t">send</span></button>
+  </form>
+  <p class="gh-foot">
+    <span class="gh-keys" aria-hidden="true">enter send <i>/</i> shift+enter newline <i>/</i> up recall <i>/</i> /help</span>
+    <span class="gh-honest">messages go to anthropic's api through this server. nothing is saved.</span>
+  </p>
+</main>
+
+<div class="fx fx-grain" aria-hidden="true"></div>
+<div class="fx fx-scan" aria-hidden="true"></div>
+</body>
+</html>

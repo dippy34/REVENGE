@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" data-page="404">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src 'self'; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'">
+<meta name="color-scheme" content="dark">
+<title>~/404</title>
+<!-- served for any missing path, so every reference is root-absolute -->
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/fx.css">
+<link rel="stylesheet" href="/css/eggs.css">
+<script src="/js/early.js"></script>
+<script src="/js/fx.js" defer></script>
+<script src="/js/menu.js" defer></script>
+<script src="/js/eggs.js" defer></script>
+<script src="/js/hunt.js" defer></script>
+</head>
+<body>
+<canvas id="rain" aria-hidden="true"></canvas>
+<div class="fx fx-vignette" aria-hidden="true"></div>
+
+<main class="shell is-lost">
+  <header class="top">
+    <a class="home" href="/" aria-label="back to menu">
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path class="mark-hex" pathLength="1" d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M9.5 12.5l4 4M13.5 12.5l-4 4M18.5 12.5l4 4M22.5 12.5l-4 4" stroke-width="1.8"/></svg>
+    </a>
+    <span class="clock" data-clock aria-hidden="true">t+00:00:00</span>
+  </header>
+
+  <div class="stage">
+    <canvas class="obj" data-obj="broken" aria-hidden="true"></canvas>
+
+    <div class="title">
+      <h1 class="digest glitch" data-digest data-tilt data-lock data-text="404"><span class="sr">404, not found</span><span aria-hidden="true" data-churn>404</span></h1>
+      <p class="sub"><span data-decode>no route to this address</span> <b aria-hidden="true">0x194</b></p>
+    </div>
+
+    <nav aria-label="way back">
+      <ul class="menu">
+        <li><a class="item" href="/" aria-label="back to menu" data-cursor="back"><span class="item-idx" aria-hidden="true">01</span><span class="label" data-scramble>back to ~</span><span class="item-end" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12H5M10.5 6.5 5 12l5.5 5.5"/></svg></span></a></li>
+      </ul>
+    </nav>
+  </div>
+</main>
+
+<div class="fx fx-grain" aria-hidden="true"></div>
+<div class="fx fx-scan" aria-hidden="true"></div>
+</body>
+</html>

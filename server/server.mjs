@@ -12,6 +12,8 @@
 //   /api/p         POST: one page view or game play (see stats.mjs)
 //   /api/stats     GET: the counts, with the STATS_KEY
 //   /api/tube-*    YouTube search / channel / details (see tube.mjs)
+//   /api/ai        POST: the ghost's chat stream; /api/ai/status (see ai.mjs)
+//   /api/hunt/*    the weekly signal (see hunt.mjs and docs/07-hunt.md); off without HUNT_ secrets
 //
 // Nothing is logged: no access log, and Wisp's own logging is switched off.
 //
@@ -28,6 +30,12 @@
 //                (visits are still counted)
 //   STATS_DIR    where the daily counts are saved (default ./.data)
 //   STATS_TZ     time zone that decides where a day starts (default America/Chicago)
+//   ANTHROPIC_API_KEY  wakes the ghost (/ghost/); without it /api/ai answers 503
+//   AI_MODEL     model id (default claude-haiku-5-5)
+//   AI_DAILY_MAX requests per day for everyone together (default 300)
+//   AI_MOCK=1    canned replies, no key and no network (development)
+//   (the ghost's per-visitor limit trusts X-Forwarded-For from a loopback or
+//   private peer only, so keep a reverse proxy in front: Caddy or the tunnel)
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -40,6 +48,8 @@ import { createJsgh } from './jsgh.mjs';
 import { createTube } from './tube.mjs';
 import { createStats } from './stats.mjs';
 import { createRh, isRhRequest } from './rhproxy.mjs';
+import { createAi } from './ai.mjs';
+import { createHunt } from './hunt.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -59,7 +69,7 @@ const stats = createStats({
   tz: process.env.STATS_TZ || 'America/Chicago'
 });
 // save the counts before systemd or Docker stops us
-for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { stats.flush(); process.exit(0); });
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { stats.flush(); if (hunt) hunt.flush(); process.exit(0); });
 
 const rules = loadHeaders(path.join(SITE, '_headers'));
 
@@ -75,6 +85,21 @@ const jsgh = createJsgh({
   headersFor: (p) => headersFor(rules, p)
 });
 const tube = createTube();
+let hunt = null;
+try {
+  hunt = createHunt({ siteDir: SITE, env: process.env, host: HOST });
+} catch (e) {
+  console.log(e && e.message ? e.message : 'hunt: could not start');
+  process.exit(1);
+}
+const ai = createAi({
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
+  model: process.env.AI_MODEL || 'claude-haiku-5-5',
+  dailyMax: process.env.AI_DAILY_MAX ? Number(process.env.AI_DAILY_MAX) : 300,
+  mock: process.env.AI_MOCK === '1',
+  mockDelay: process.env.AI_MOCK_DELAY ? Number(process.env.AI_MOCK_DELAY) : undefined,
+  tz: process.env.STATS_TZ || 'America/Chicago'
+});
 
 // Ruffle: only the files that exist in the package, by exact name
 const RUFFLE_DIR = path.join(here, 'node_modules', '@ruffle-rs', 'ruffle');
@@ -159,7 +184,12 @@ function sendFile(req, res, file, extra) {
   });
 }
 
+// The themed site/404.html (same headers as the menu) when it exists,
+// otherwise plain text.
 function notFound(req, res) {
+  let page = null;
+  try { page = fs.readFileSync(path.join(SITE, '404.html')); } catch (e) { /* no page */ }
+  if (page) return send(res, 404, Object.assign({ 'content-type': 'text/html; charset=utf-8' }, headersFor(rules, '/')), req.method === 'HEAD' ? '' : page);
   send(res, 404, Object.assign({ 'content-type': 'text/plain; charset=utf-8' }, headersFor(rules, '/404')), 'not found');
 }
 
@@ -178,6 +208,8 @@ function resolveSite(urlPath) {
 const server = http.createServer((req, res) => {
   const urlPath = new URL(req.url, 'http://x').pathname;
   if (req.method === 'POST' && urlPath === '/api/p') return stats.hit(req, res);
+  if (req.method === 'POST' && urlPath === '/api/ai') return ai.handle(req, res);
+  if (urlPath.startsWith('/api/hunt/')) return hunt.handle(req, res);
   if (isRhRequest(req.method, req.url)) return rh.handle(req, res);
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return send(res, 405, { allow: 'GET, HEAD' }, '');
@@ -185,6 +217,7 @@ const server = http.createServer((req, res) => {
   if (urlPath === '/api/stats') return stats.report(req, res);
   if (urlPath === '/api/tube-search') return tube.handleSearch(req, res);
   if (urlPath === '/api/tube-video') return tube.handleVideo(req, res);
+  if (urlPath === '/api/ai/status') return ai.status(req, res);
 
   if (urlPath === '/proxy/sw.js') {
     return send(res, 200, {
@@ -241,5 +274,5 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`listening on http://${HOST}:${PORT} (proxy key ${KEY ? 'on' : 'off'}, stats page ${process.env.STATS_KEY ? 'on' : 'off'})`);
+  console.log(`listening on http://${HOST}:${PORT} (proxy key ${KEY ? 'on' : 'off'}, stats page ${process.env.STATS_KEY ? 'on' : 'off'}, ${hunt.summary()})`);
 });

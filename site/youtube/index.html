@@ -12,38 +12,53 @@
 <link rel="stylesheet" href="../css/base.css">
 <link rel="stylesheet" href="../css/fx.css">
 <link rel="stylesheet" href="../css/yt.css">
+<link rel="stylesheet" href="../css/eggs.css">
 <script src="../js/early.js"></script>
 <script src="../js/fx.js" defer></script>
 <script src="../js/yt-api.js" defer></script>
 <script src="../js/yt-profile.js" defer></script>
 <script src="../js/yt-app.js" defer></script>
 <script src="../js/hit.js" defer></script>
+<script src="../js/eggs.js" defer></script>
+<script src="../js/hunt.js" defer></script>
 </head>
 <body>
+<canvas id="rain" aria-hidden="true"></canvas>
+<div class="yt-bg" aria-hidden="true"></div>
 
 <header class="yt-top">
-  <a class="yt-logo" href="../" aria-label="back to menu">
-    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
-  </a>
+  <div class="yt-brand">
+    <a class="yt-logo" href="../" aria-label="back to menu" data-cursor="menu">
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path class="hex" d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path class="eyes" d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+    </a>
+    <span class="yt-path" aria-hidden="true">~/v/<b id="yt-path">home</b></span>
+  </div>
   <nav class="yt-nav" aria-label="youtube">
-    <a href="#/home" data-nav="home">home</a>
-    <a href="#/shorts" data-nav="shorts">shorts</a>
-    <a href="#/subs" data-nav="subs">subscriptions</a>
-    <a href="#/library" data-nav="library">library</a>
+    <a href="#/home" data-nav="home" aria-label="home" data-scramble>home</a>
+    <a href="#/shorts" data-nav="shorts" aria-label="shorts" data-scramble>shorts</a>
+    <a href="#/subs" data-nav="subs" aria-label="subscriptions" data-scramble>subscriptions</a>
+    <a href="#/library" data-nav="library" aria-label="library" data-scramble>library</a>
+    <span class="yt-nav-bar" id="yt-nav-bar" aria-hidden="true"></span>
   </nav>
   <form class="yt-search" id="yt-search" role="search" autocomplete="off">
+    <span class="yt-prompt" aria-hidden="true">&gt;</span>
     <label class="sr" for="yt-q">search youtube or paste a link</label>
     <input id="yt-q" type="search" maxlength="300" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="search" placeholder="search or paste a link">
+    <kbd class="yt-kbd" aria-hidden="true">/</kbd>
+    <span class="yt-hint" aria-hidden="true"><b>enter</b> search &middot; paste a youtube link to play it</span>
     <button type="submit" aria-label="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
     </button>
   </form>
+  <span class="yt-load" id="yt-load" aria-hidden="true"></span>
 </header>
 
 <main class="yt-view" id="view" tabindex="-1"></main>
-<p class="yt-toast" id="yt-toast" role="status"></p>
+<div class="yt-toast" id="yt-toast" role="status"><span class="yt-toast-p" aria-hidden="true">&gt;</span><span id="yt-toast-t"></span><i class="yt-toast-bar" id="yt-toast-bar" aria-hidden="true"></i></div>
 <noscript><p class="yt-empty">This page needs JavaScript.</p></noscript>
 
+<div class="yt-sweep" id="yt-sweep" aria-hidden="true"></div>
+<div class="yt-flash" id="yt-flash" aria-hidden="true"></div>
 <div class="fx fx-grain" aria-hidden="true"></div>
 <div class="fx fx-scan" aria-hidden="true"></div>
 </body>

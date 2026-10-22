@@ -1,8 +1,15 @@
-/* fx.css: background canvas, grain, scanlines, cursor, glitch,
-   boot screen and page transitions. Pure decoration: removing this file
-   leaves a working page. Reduced motion calms or switches all of it off. */
+/* fx.css: background canvases, CRT overlays (grain, scanlines, flicker,
+   tear, bezel, corner brackets), lock-on cursor, glitch, boot
+   screen, entrances, the CRT power-off / power-on page transitions and
+   the effects tiers (html[data-fx]).
+   Pure decoration: removing this file leaves a working page. Reduced motion
+   calms or switches all of it off. Monochrome only. */
 
 /* ---------- layers ---------- */
+
+/* stacking, low to high:
+   0 rain · 1 vignette · 2 page · 50 boot · 56 curtain
+   60 grain · 61 scanlines · 62 tear · 63 brackets · 100 cursor */
 
 #rain {
   position: fixed;
@@ -10,16 +17,20 @@
   z-index: 0;
   width: 100%;
   height: 100%;
-  opacity: .34;
+  opacity: .9;
   pointer-events: none;
 }
 
 .fx { position: fixed; pointer-events: none; }
 
+/* soft falloff plus a rounded CRT glass edge; the outer shadow fills the
+   corners outside the radius */
 .fx-vignette {
   inset: 0;
   z-index: 1;
-  background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0, 0, 0, .78) 100%);
+  border-radius: 22px;
+  background: radial-gradient(ellipse 75% 70% at 50% 46%, transparent 40%, rgba(0, 0, 0, .82) 100%);
+  box-shadow: 0 0 0 80px #000, inset 0 0 90px 12px rgba(0, 0, 0, .9);
 }
 
 /* the grain layer is oversized so it can jitter without showing edges */
@@ -27,7 +38,7 @@
   inset: -20%;
   z-index: 60;
   background: url("../assets/grain.svg") repeat;
-  background-size: 180px;
+  background-size: 170px;
   opacity: .085;
   animation: grain 1s steps(6) infinite;
   will-change: transform;
@@ -43,37 +54,121 @@
   100% { transform: translate(0, 0); }
 }
 
+/* phosphor rows: faint bright lines with a darker interlace between them,
+   a refresh band rolling down, and an irregular low flicker */
 .fx-scan {
   inset: 0;
   z-index: 61;
-  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .028) 0 1px, transparent 1px 3px);
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .026) 0 1px, transparent 1px 3px);
+  animation: flicker 6.5s steps(1) infinite;
   transition: opacity .4s;
 }
-/* a faint refresh band rolling down the screen */
+.fx-scan::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, .1) 2px 3px);
+}
 .fx-scan::after {
   content: "";
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
-  height: 18vh;
-  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, .03), transparent);
+  height: 30vh;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, .016) 50%, transparent);
   animation: sweep 9s linear infinite;
 }
 @keyframes sweep {
-  from { transform: translateY(-20vh); }
-  to   { transform: translateY(120vh); }
+  from { transform: translateY(-32vh); }
+  to   { transform: translateY(125vh); }
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  31%      { opacity: .78; }
+  32%      { opacity: 1; }
+  57%      { opacity: .9; }
+  58%      { opacity: 1; }
+  83%      { opacity: .84; }
+  84%      { opacity: 1; }
 }
 
 /* keep the video itself clean while it plays */
 html.playing .fx-grain,
-html.playing .fx-scan { opacity: 0; }
+html.playing .fx-scan,
+html.playing .fx-frame { opacity: 0; }
+
+/* occasional horizontal interference line (menu and 404 only) */
+.fx-tear {
+  top: var(--y, 40vh);
+  right: 0;
+  left: 0;
+  z-index: 62;
+  height: var(--h, 4vh);
+  opacity: 0;
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .06) 0 1px, transparent 1px 2px);
+  -webkit-backdrop-filter: brightness(1.7) contrast(1.3);
+  backdrop-filter: brightness(1.7) contrast(1.3);
+}
+.fx-tear.is-a { animation: tear-a .22s steps(3) both; }
+.fx-tear.is-b { animation: tear-b .22s steps(3) both; }
+@keyframes tear-a {
+  0%   { opacity: 1; transform: translateY(0) scaleY(1); }
+  50%  { opacity: 1; transform: translateY(-2.5vh) scaleY(.4); }
+  100% { opacity: 0; transform: translateY(1vh) scaleY(1.4); }
+}
+@keyframes tear-b {
+  0%   { opacity: 1; transform: translateY(0) scaleY(1); }
+  50%  { opacity: 1; transform: translateY(-2.5vh) scaleY(.4); }
+  100% { opacity: 0; transform: translateY(1vh) scaleY(1.4); }
+}
+.shell.is-tear { animation: jolt .2s steps(2) both; }
+@keyframes jolt {
+  0%   { translate: 3px 0; }
+  50%  { translate: -2px 0; }
+  100% { translate: 0 0; }
+}
+
+/* viewport corner brackets, pure decoration */
+.fx-frame {
+  inset: 12px;
+  z-index: 63;
+  transition: opacity .4s;
+}
+.fx-frame i {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 0 solid var(--line-3, #5a5a5a);
+}
+.fx-frame i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.fx-frame i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+.fx-frame i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+.fx-frame i:nth-child(4) { right: 0; bottom: 0; border-right-width: 1px; border-bottom-width: 1px; }
+/* app pages (youtube, games, proxy, stats) have bars that run edge to
+   edge: tighter, dimmer brackets there, and none on narrow screens */
+:where(html[data-page]:not([data-page="menu"]):not([data-page="404"])) .fx-frame { inset: 6px; opacity: .6; }
+:where(html[data-page]:not([data-page="menu"]):not([data-page="404"])) .fx-frame i { width: 12px; height: 12px; }
+@media (max-width: 899px) {
+  :where(html[data-page]:not([data-page="menu"]):not([data-page="404"])) .fx-frame { display: none; }
+}
+@media (max-width: 720px) {
+  .fx-frame { inset: 8px; }
+  .fx-frame i { width: 12px; height: 12px; }
+}
+
+/* ---------- glyph object ---------- */
+
+/* the canvas fades in once fx.js has drawn its first frame */
+.obj { opacity: 0; transition: opacity 1.2s var(--ease-out); }
+.obj.is-on { opacity: 1; }
 
 /* ---------- custom cursor (fine pointers only, added by fx.js) ---------- */
 
 html.has-cursor,
 html.has-cursor * { cursor: none !important; }
-html.has-cursor input { cursor: text !important; }
+html.has-cursor input,
+html.has-cursor textarea { cursor: text !important; }
 
 .cur {
   position: fixed;
@@ -88,12 +183,33 @@ html.has-cursor input { cursor: text !important; }
 .cur.on { opacity: 1; }
 .cur.on.off { opacity: 0; }
 
+html.leaving .cur { opacity: 0 !important; }
+
+/* crosshair: a dot with four short ticks that fold away on lock */
 .cur-dot {
-  width: 4px;
-  height: 4px;
-  margin: -2px 0 0 -2px;
-  background: #fff;
+  width: 15px;
+  height: 15px;
+  margin: -7.5px 0 0 -7.5px;
 }
+.cur-dot::before,
+.cur-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transition: transform .2s var(--ease-out), opacity .2s;
+}
+.cur-dot::after {
+  background: linear-gradient(#fff, #fff) 50% 50% / 3px 3px no-repeat;
+}
+.cur-dot::before {
+  background:
+    linear-gradient(#fff, #fff) 0 50% / 4px 1px no-repeat,
+    linear-gradient(#fff, #fff) 100% 50% / 4px 1px no-repeat,
+    linear-gradient(#fff, #fff) 50% 0 / 1px 4px no-repeat,
+    linear-gradient(#fff, #fff) 50% 100% / 1px 4px no-repeat;
+}
+.cur-dot.is-lock::before { transform: scale(.3); opacity: 0; }
+
 .cur-ring {
   width: 30px;
   height: 30px;
@@ -105,97 +221,402 @@ html.has-cursor input { cursor: text !important; }
   inset: 0;
   border: 1px solid rgba(255, 255, 255, .7);
   border-radius: 50%;
-  transition: transform .25s var(--ease), background-color .25s, border-color .25s;
+  transition: transform .3s var(--ease-out), opacity .2s, background-color .25s, border-color .25s;
 }
 .cur-ring.is-hot::before {
-  transform: scale(1.6);
+  transform: scale(1.7);
   border-color: #fff;
-  background: rgba(255, 255, 255, .08);
+  background: rgba(255, 255, 255, .07);
 }
+.cur-ring.is-lock::before { transform: scale(.3); opacity: 0; }
 .cur-ring.is-down::before { transform: scale(.7); }
+.cur-ring.is-hot.is-down::before { transform: scale(1.4); }
 
-/* ---------- glitch (two offset slices of the same text) ---------- */
+/* lock-on brackets: positioned corner by corner from JS */
+.cur-c {
+  width: 9px;
+  height: 9px;
+  margin: 0;
+  border: 0 solid #fff;
+  transition: opacity .18s;
+}
+.cur-c.on { opacity: 0; }
+.cur-c.on.is-lock { opacity: 1; }
+.cur-c.is-dim { border-color: #8a8a8a; }
+.cur-c.tl { border-top-width: 1px; border-left-width: 1px; }
+.cur-c.tr { border-top-width: 1px; border-right-width: 1px; }
+.cur-c.bl { border-bottom-width: 1px; border-left-width: 1px; }
+.cur-c.br { border-right-width: 1px; border-bottom-width: 1px; }
 
+/* tiny label from data-cursor */
+.cur-tag {
+  padding: 1px 5px;
+  font: 400 10px/1.4 var(--font);
+  letter-spacing: .12em;
+  white-space: pre;
+  color: #000;
+  background: #fff;
+}
+.cur-tag.on { opacity: 0; }
+.cur-tag.on.is-show { opacity: 1; }
+
+/* text fields and the video frame hide every part of the cursor */
+.cur-c.on.is-lock.off,
+.cur-tag.on.is-show.off { opacity: 0; }
+
+/* click ripple: two identical keyframes so it restarts without a reflow */
+.cur-rip {
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  opacity: 1;
+}
+.cur-rip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  opacity: 0;
+}
+.cur-rip.is-a::before { animation: rip-a .5s var(--ease-out); }
+.cur-rip.is-b::before { animation: rip-b .5s var(--ease-out); }
+@keyframes rip-a { from { opacity: .9; transform: scale(.2); } to { opacity: 0; transform: scale(1.6); } }
+@keyframes rip-b { from { opacity: .9; transform: scale(.2); } to { opacity: 0; transform: scale(1.6); } }
+
+/* ---------- glitch (offset slices of the same text) ---------- */
+
+/* :where() keeps these at zero specificity, so fx.glitch() on any element
+   never overrides that element's own positioning or animation */
 .glitch { position: relative; display: inline-block; }
+:where(.is-glitching) { position: relative; animation: glitch-jolt .5s steps(1) both; }
 .glitch::before,
-.glitch::after {
+.glitch::after,
+.is-glitching::before,
+.is-glitching::after {
   content: attr(data-text);
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  white-space: nowrap;
   background: var(--bg);
+  text-shadow: none;
   opacity: 0;
   pointer-events: none;
 }
-.glitch.is-glitching::before {
+.is-glitching::before {
   opacity: 1;
   color: var(--hi);
+  text-shadow: 0 0 14px rgba(255, 255, 255, .35);
   animation: glitch-a .5s steps(1) both;
 }
-.glitch.is-glitching::after {
+.is-glitching::after {
   opacity: 1;
-  color: #8a8a8a;
+  color: #7a7a7a;
   animation: glitch-b .5s steps(1) both;
 }
 @keyframes glitch-a {
-  0%   { clip-path: inset(10% 0 70% 0); transform: translate(-3px, 0); }
-  20%  { clip-path: inset(62% 0 14% 0); transform: translate(3px, 0); }
-  40%  { clip-path: inset(34% 0 46% 0); transform: translate(-2px, 0); }
-  60%  { clip-path: inset(82% 0 4% 0);  transform: translate(4px, 0); }
-  80%  { clip-path: inset(4% 0 84% 0);  transform: translate(-4px, 0); }
+  0%   { clip-path: inset(10% 0 70% 0); transform: translate(-4px, 0); }
+  14%  { clip-path: inset(62% 0 14% 0); transform: translate(5px, 0) skewX(-8deg); }
+  28%  { clip-path: inset(34% 0 46% 0); transform: translate(-2px, 0); }
+  42%  { clip-path: inset(82% 0 4% 0);  transform: translate(7px, 0); }
+  57%  { clip-path: inset(4% 0 84% 0);  transform: translate(-6px, 0) skewX(10deg); }
+  71%  { clip-path: inset(45% 0 41% 0); transform: translate(3px, 0); }
+  85%  { clip-path: inset(22% 0 66% 0); transform: translate(-3px, 0); }
   100% { clip-path: inset(50% 0 50% 0); transform: none; }
 }
 @keyframes glitch-b {
-  0%   { clip-path: inset(72% 0 8% 0);  transform: translate(3px, 1px); }
-  20%  { clip-path: inset(20% 0 64% 0); transform: translate(-3px, 0); }
-  40%  { clip-path: inset(48% 0 30% 0); transform: translate(4px, -1px); }
-  60%  { clip-path: inset(6% 0 78% 0);  transform: translate(-2px, 0); }
-  80%  { clip-path: inset(58% 0 26% 0); transform: translate(2px, 1px); }
+  0%   { clip-path: inset(72% 0 8% 0);  transform: translate(4px, 1px); }
+  14%  { clip-path: inset(20% 0 64% 0); transform: translate(-5px, 0); }
+  28%  { clip-path: inset(48% 0 30% 0); transform: translate(6px, -1px); }
+  42%  { clip-path: inset(6% 0 78% 0);  transform: translate(-3px, 0); }
+  57%  { clip-path: inset(58% 0 26% 0); transform: translate(3px, 1px); }
+  71%  { clip-path: inset(88% 0 2% 0);  transform: translate(-7px, 0); }
+  85%  { clip-path: inset(30% 0 52% 0); transform: translate(2px, 0); }
   100% { clip-path: inset(50% 0 50% 0); transform: none; }
 }
+@keyframes glitch-jolt {
+  0%   { translate: 0 0; filter: none; }
+  14%  { translate: -2px 0; filter: brightness(1.6); }
+  28%  { translate: 1px 0; filter: none; }
+  57%  { translate: 2px 0; filter: brightness(1.3); }
+  71%  { translate: 0 0; filter: none; }
+}
 
-/* locked menu entry: short shake */
+/* locked menu entry: short shake, the hatch flashes */
 .item.is-denied { animation: denied .36s steps(2) both; }
+.item.is-denied::before { transform: scaleX(1); animation: denied-hatch .36s steps(2) both; }
 @keyframes denied {
   0%   { transform: translateX(0); }
-  25%  { transform: translateX(-5px); }
-  50%  { transform: translateX(4px); }
+  25%  { transform: translateX(-6px); }
+  50%  { transform: translateX(5px); }
   75%  { transform: translateX(-2px); }
   100% { transform: translateX(0); }
 }
-
-.boot-log::after {
-  content: "_";
-  margin-left: 2px;
-  animation: blink 1.05s steps(1) infinite;
+@keyframes denied-hatch {
+  0%   { opacity: 1; }
+  50%  { opacity: .3; }
+  100% { opacity: 1; }
 }
-@keyframes blink { 50% { opacity: 0; } }
+
+/* the chosen entry blinks before the page powers off */
+.item.is-go::before { transform: scaleX(1); animation: go-blink .3s steps(2) 2; }
+@keyframes go-blink { 50% { opacity: 0; } }
+
+/* ---------- mark and clock ---------- */
+
+/* the hex outline draws itself, then the eyes blink now and then */
+html.js:not(.boot) .mark-hex {
+  stroke-dasharray: 1;
+  animation: mark-draw 1.4s var(--ease-out) .15s backwards;
+}
+@keyframes mark-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+html.js:not(.boot) .mark-eye { animation: eye-blink 7s 1.6s infinite; }
+html.js:not(.boot) .mark-eye + .mark-eye { animation-delay: 1.64s; }
+@keyframes eye-blink {
+  0%, 93%, 96%, 100% { transform: scaleY(1); }
+  94.5%              { transform: scaleY(.1); }
+}
+
+.clock .tk-a { animation: tick-a .7s var(--ease-out); }
+.clock .tk-b { animation: tick-b .7s var(--ease-out); }
+@keyframes tick-a { from { color: var(--hi); text-shadow: 0 0 8px rgba(255, 255, 255, .6); } }
+@keyframes tick-b { from { color: var(--hi); text-shadow: 0 0 8px rgba(255, 255, 255, .6); } }
+
+/* ---------- entrances ---------- */
+
+/* gated on html:not(.boot), so after the boot screen they start the moment
+   it lifts; .fx-in (arriving through a transition) waits for the curtain */
+html.js:not(.boot) .top { animation: rise .7s var(--ease-out) .05s backwards; }
+html.js:not(.boot) .title { animation: rise-in 1s var(--ease-out) .12s backwards; }
+html.js:not(.boot) .sub { animation: rise .8s var(--ease-out) .3s backwards; }
+html.js:not(.boot) .menu { animation: line-in .7s var(--ease-snap) .26s backwards; }
+html.js:not(.boot) .menu li { animation: rise .55s var(--ease-out) var(--d, .36s) backwards; }
+html.js:not(.boot) .menu .item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--hi);
+  transform: scaleX(0);
+  transform-origin: 100% 50%;
+  animation: print .5s var(--ease-snap) var(--d, .36s) backwards;
+  pointer-events: none;
+}
+.menu li:nth-child(1) { --d: .36s; }
+.menu li:nth-child(2) { --d: .46s; }
+.menu li:nth-child(3) { --d: .56s; }
+html.fx-in .top { animation-delay: .3s; }
+html.fx-in .title { animation-delay: .34s; }
+html.fx-in .menu li:nth-child(1) { --d: .5s; }
+html.fx-in .menu li:nth-child(2) { --d: .58s; }
+html.fx-in .menu li:nth-child(3) { --d: .66s; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); filter: blur(4px); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px) scale(.985); filter: blur(10px) brightness(2); }
+  40%  { filter: blur(1px) brightness(1.4); }
+}
+@keyframes line-in {
+  from { border-top-color: transparent; }
+}
+@keyframes print {
+  0%   { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(0); opacity: 1; }
+}
 
 /* ---------- boot screen (first visit to the menu only) ---------- */
 
 .boot {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 50;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--dim);
+  background: var(--bg);
+}
+.boot.is-done { opacity: 0; transition: opacity .38s var(--ease); }
+
+/* power-on: a bright line grows across, then the picture opens from it */
+.boot-line {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 2px;
+  margin-top: -1px;
+  background: #fff;
+  box-shadow: 0 0 10px 1px rgba(255, 255, 255, .8), 0 0 46px 4px rgba(255, 255, 255, .2);
+  animation: power-line .6s var(--ease-snap) both;
+}
+@keyframes power-line {
+  0%   { transform: scaleX(0); opacity: 1; }
+  40%  { transform: scaleX(1); opacity: 1; }
+  70%  { transform: scaleX(1) scaleY(2); opacity: .6; }
+  100% { transform: scaleX(1) scaleY(3); opacity: 0; }
+}
+.boot-scr {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 1fr auto;
+  gap: 0 40px;
+  padding: calc(var(--gutter) + 18px) calc(var(--gutter) + 10px);
+  animation: power-on .48s var(--ease-out) .24s both;
+}
+@keyframes power-on {
+  0%   { clip-path: inset(49.8% 0 49.8% 0); filter: brightness(3); }
+  55%  { clip-path: inset(4% 0 4% 0); filter: brightness(1.5); }
+  100% { clip-path: inset(0 0 0 0); filter: none; }
+}
+
+/* the mark draws itself in the middle while everything loads, inside a
+   turning tick ring, then gives way to the digest */
+.boot-mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(120px, 16vw, 168px);
+  height: clamp(120px, 16vw, 168px);
+  overflow: visible;
+  color: #fff;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, .55));
+  transition: opacity .3s var(--ease), transform .5s var(--ease-out), filter .4s;
+}
+.boot-mark.is-out { opacity: 0; transform: translate(-50%, -50%) scale(1.5); filter: blur(6px); }
+.boot-hex { stroke-dasharray: 1; animation: mark-draw .9s var(--ease-out) .32s both; }
+.boot-eye { opacity: 0; transform-box: fill-box; transform-origin: center; animation: eye-on .5s steps(3) .95s both; }
+@keyframes eye-on { 0% { opacity: 0; transform: scaleY(.1); } 50% { opacity: 1; transform: scaleY(.1); } 100% { opacity: 1; transform: none; } }
+.boot-ring {
+  color: var(--line-3, #5a5a5a);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ring-turn 3s linear infinite;
+}
+.boot-ring.is-in { color: #2e2e2e; animation-duration: 5s; animation-direction: reverse; }
+@keyframes ring-turn { to { transform: rotate(360deg); } }
+.boot-pct {
+  position: absolute;
+  top: calc(50% + clamp(84px, 11vw, 116px));
+  left: 50%;
+  font-size: 11px;
+  letter-spacing: .3em;
+  color: var(--dim);
+  transform: translateX(-50%);
+  transition: opacity .3s;
+}
+.boot-pct.is-out { opacity: 0; }
+
+.boot-log {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: end;
+  white-space: pre;
+}
+.boot-log div { animation: boot-row .18s steps(2) backwards; }
+.boot-log .ok { color: var(--hi); text-shadow: var(--glow); }
+.boot-log::after {
+  content: "_";
+  margin-left: 2px;
+  color: var(--hi);
+  animation: blink 1.05s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes boot-row { from { opacity: 0; } 50% { opacity: .6; color: var(--hi); } }
+
+.boot-bars {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  white-space: pre;
+  color: var(--dim);
+}
+.boot-bars b { font-weight: 400; color: var(--hi); text-shadow: var(--glow); }
+
+.boot-dump {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: stretch;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre;
+  color: #4d4d4d;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%, #000);
+  mask-image: linear-gradient(to bottom, transparent, #000 30%, #000);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: var(--gutter);
-  font-size: 13px;
-  color: var(--dim);
-  background: var(--bg);
-  transition: opacity .35s var(--ease);
 }
-.boot.is-done { opacity: 0; }
-.boot-log { margin: 0 0 8vh; white-space: pre; }
-.boot-log .ok { color: var(--hi); }
+.boot-dump div:last-child { color: var(--dim); }
+.boot-dump div:last-child b { color: var(--hi); font-weight: 400; }
+
+.boot-digest {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: clamp(40px, 9vw, 96px);
+  font-weight: 300;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: .01em;
+  color: var(--hi);
+  text-shadow: 0 0 1px rgba(255, 255, 255, .7), 0 0 18px rgba(255, 255, 255, .3), 0 0 50px rgba(255, 255, 255, .14);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transform-origin: 0 0;
+}
+/* the digest flies to where the menu title sits (set from JS), so the
+   hand-off from boot to menu is a single continuous object */
+.boot-digest.is-landing { transition: transform .34s var(--ease-snap); }
+html.booted .title { animation: none; }
+.boot-digest.on { opacity: 1; }
+.boot-scr.is-dim .boot-log,
+.boot-scr.is-dim .boot-bars,
+.boot-scr.is-dim .boot-dump { opacity: .22; transition: opacity .3s var(--ease); }
+
+.boot-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+}
+.boot-flash.on { animation: flash .42s var(--ease-out) both; }
+@keyframes flash { 0% { opacity: 0; } 15% { opacity: .42; } 100% { opacity: 0; } }
+
 .boot-skip {
   position: absolute;
-  top: var(--gutter);
-  right: var(--gutter);
+  top: calc(var(--gutter) + 18px);
+  right: calc(var(--gutter) + 10px);
   font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--mute);
+}
+.boot-skip::before { content: "[ "; }
+.boot-skip::after { content: " ]"; }
+
+@media (max-width: 720px) {
+  .boot-scr { grid-template-columns: minmax(0, 1fr); padding: calc(var(--gutter) + 14px); }
+  .boot-dump {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 10px;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 40%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 40%, transparent);
+  }
+  .boot-bars { grid-row: 2; margin-bottom: 14px; align-self: end; }
+  .boot-log { grid-row: 3; font-size: 11px; }
+  .boot-scr { grid-template-rows: 1fr auto auto; }
+  .boot-skip { top: calc(var(--gutter) + 10px); right: calc(var(--gutter) + 10px); }
 }
 
 /* hide the page under the boot screen; the failsafe shows it anyway if
@@ -208,29 +629,152 @@ html.boot .shell {
 
 /* ---------- section transitions ---------- */
 
-/* fill-mode backwards (not both) so the end state never overrides the
-   leaving transition below */
-.shell { animation: enter .5s var(--ease) backwards; }
-@keyframes enter {
-  from { opacity: 0; transform: translateY(8px); filter: blur(3px); }
-}
-html.leaving .shell {
+/* Leaving: the picture squashes toward a bright horizontal line while two
+   black panels close over it, then the line shrinks to a dot (CRT power
+   off). The next page starts from that line and opens (power on). */
+.fx-curtain { inset: 0; z-index: 56; }
+.fx-curtain i {
+  position: absolute;
+  right: 0;
+  left: 0;
+  background: #000;
   opacity: 0;
-  transform: translateY(-6px);
-  filter: blur(3px);
-  transition: opacity .24s var(--ease), transform .24s var(--ease), filter .24s var(--ease);
 }
+.fx-curtain .ct { top: 0; height: 50%; }
+.fx-curtain .cb { bottom: 0; height: 50%; }
+.fx-curtain .cl {
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: #fff;
+  box-shadow: 0 0 14px 3px rgba(255, 255, 255, .75), 0 0 70px 10px rgba(255, 255, 255, .22);
+}
+.fx-curtain.is-closing .ct { animation: shut-t .26s var(--ease-snap) both; }
+.fx-curtain.is-closing .cb { animation: shut-b .26s var(--ease-snap) both; }
+.fx-curtain.is-closing .cl { animation: shut-l .42s linear both; }
+@keyframes shut-t { from { opacity: 1; transform: translateY(-100%); } to { opacity: 1; transform: none; } }
+@keyframes shut-b { from { opacity: 1; transform: translateY(100%); } to { opacity: 1; transform: none; } }
+@keyframes shut-l {
+  0%, 52% { opacity: 0; transform: scaleX(1); }
+  60%     { opacity: 1; transform: scaleX(1); }
+  92%     { opacity: 1; transform: scaleX(.004) scaleY(1.6); }
+  100%    { opacity: 0; transform: scaleX(.004) scaleY(1.6); }
+}
+/* back / forward cache: open the curtain again */
+.fx-curtain.is-opening .ct { animation: open-t .45s var(--ease-snap) both; }
+.fx-curtain.is-opening .cb { animation: open-b .45s var(--ease-snap) both; }
+@keyframes open-t { from { opacity: 1; transform: none; } to { opacity: 1; transform: translateY(-101%); } }
+@keyframes open-b { from { opacity: 1; transform: none; } to { opacity: 1; transform: translateY(101%); } }
+
+html.leaving body > main,
+html.leaving body > header {
+  opacity: .35;
+  transform: scaleY(.9);
+  filter: brightness(1.8) blur(1.5px);
+  transition: opacity .26s var(--ease-snap), transform .26s var(--ease-snap), filter .26s var(--ease-snap);
+}
+
+/* Arriving: early.js sets html.fx-in before first paint, so these two
+   panels are there from the very first frame. A line grows from the centre,
+   then splits and opens. CSS only: it finishes even if fx.js never runs. */
+html.fx-in::before,
+html.fx-in::after {
+  content: "";
+  position: fixed;
+  right: 0;
+  left: 0;
+  z-index: 56;
+  height: 50.5vh;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, transparent, #fff 30%, #fff 70%, transparent) no-repeat,
+    #000;
+  background-size: 0% 1px;
+}
+html.fx-in::before { top: 0; background-position: 50% 100%; animation: on-t .62s var(--ease-snap) both; }
+html.fx-in::after { bottom: 0; background-position: 50% 0; animation: on-b .62s var(--ease-snap) both; }
+@keyframes on-t {
+  0%   { background-size: 0% 1px; transform: none; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  30%  { background-size: 100% 1px; transform: none; box-shadow: 0 6px 30px -6px rgba(255, 255, 255, .7); }
+  100% { background-size: 100% 1px; transform: translateY(-101%); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+@keyframes on-b {
+  0%   { background-size: 0% 1px; transform: none; box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  30%  { background-size: 100% 1px; transform: none; box-shadow: 0 -6px 30px -6px rgba(255, 255, 255, .7); }
+  100% { background-size: 100% 1px; transform: translateY(101%); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+html.fx-in .shell { animation: picture-on .7s var(--ease-out) .12s backwards; }
+@keyframes picture-on {
+  from { transform: scaleY(.6); filter: brightness(2.4) blur(2px); }
+}
+
+/* ---------- effects tiers ---------- */
+
+/* html[data-fx] is set by early.js before first paint and kept current by
+   fx.js. high = everything above. mid drops the flicker, the interference
+   line and one scanline layer. low also stills the grain, drops the
+   rolling band and the blurred entrances, and turns page transitions into
+   a quick fade. Section bars and glows are tiered in their own files; the
+   proxy page is tiered here. */
+html[data-fx="mid"] .fx-scan,
+html[data-fx="low"] .fx-scan { animation: none; }
+html[data-fx="mid"] .fx-scan::before,
+html[data-fx="low"] .fx-scan::before,
+html[data-fx="low"] .fx-scan::after,
+html[data-fx="mid"] .fx-tear,
+html[data-fx="low"] .fx-tear { display: none; }
+html[data-fx="low"] .fx-grain { inset: 0; animation: none; will-change: auto; }
+html[data-fx="low"] .shell.is-tear { animation: none; }
+
+/* entrances lose their blur (an !important filter beats the keyframes
+   without restarting them, so a tier change mid-entrance never replays it) */
+html[data-fx="low"] .shell :is(.top, .title, .sub, .menu li) { filter: none !important; }
+
+/* low: leave with a short fade to black, arrive with one */
+html[data-fx="low"] .fx-curtain.is-closing { background: #000; animation: fx-lite .15s linear both; }
+html[data-fx="low"] .fx-curtain.is-closing i { animation: none; opacity: 0; }
+@keyframes fx-lite { from { opacity: 0; } }
+html[data-fx="low"].leaving body > main,
+html[data-fx="low"].leaving body > header { transform: none; filter: none; transition: opacity .15s linear; }
+html[data-fx="low"].fx-in::after { display: none; }
+html[data-fx="low"].fx-in::before {
+  height: 100vh;
+  background: #000;
+  animation: fx-unveil .26s linear both;
+}
+@keyframes fx-unveil { to { opacity: 0; } }
+html[data-fx="low"].fx-in .shell { animation: none; }
+
+/* proxy page (its own file belongs to another owner): lighter glass on
+   mid, a solid bar and no staggered blur-in on low */
+html[data-fx="mid"] .p-top {
+  -webkit-backdrop-filter: blur(8px) grayscale(1) brightness(.55);
+  backdrop-filter: blur(8px) grayscale(1) brightness(.55);
+}
+html[data-fx="low"] .p-top {
+  background: rgba(3, 3, 3, .98);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-fx="low"] :is(.p-q, .p-key) { filter: none !important; }
 
 /* ---------- reduced motion: calm everything down ---------- */
 
 @media (prefers-reduced-motion: reduce) {
   .fx-scan::after,
+  .fx-tear,
   .glitch::before,
-  .glitch::after { display: none; }
+  .glitch::after,
+  .is-glitching::before,
+  .is-glitching::after,
+  .boot-log::after { display: none; }
+  .fx-grain { animation: none; }
+  .fx-scan { animation: none; }
   *, *::before, *::after {
     animation-duration: .01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
-  .boot-log::after { animation: none; }
+  .digest { transform: none; }
 }

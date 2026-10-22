@@ -309,7 +309,11 @@ export function createJsgh({ cacheDir, maxBytes, headersFor }) {
     hd['content-length'] = end - start + 1;
     res.writeHead(status, hd);
     if (req.method === 'HEAD') return res.end();
-    pipeline(fs.createReadStream(file, { start, end }), res, () => {});
+    // a client that leaves early ends the pipeline before the file is open;
+    // the late open error (file evicted meanwhile) must not crash the server
+    const rs = fs.createReadStream(file, { start, end });
+    rs.on('error', () => {});
+    pipeline(rs, res, () => {});
   }
 
   function teeToCache(h, meta, expected) {

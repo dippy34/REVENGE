@@ -10,15 +10,22 @@
 <title>~/s</title>
 <link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/fx.css">
 <link rel="stylesheet" href="../css/stats.css">
+<link rel="stylesheet" href="../css/eggs.css">
 <script src="../js/early.js"></script>
+<script src="../js/fx.js" defer></script>
 <script src="../js/stats.js" defer></script>
+<script src="../js/eggs.js" defer></script>
+<script src="../js/hunt.js" defer></script>
 </head>
 <body>
+<canvas id="rain" aria-hidden="true"></canvas>
+
 <header class="s-top">
-  <a class="s-back" href="../" aria-label="back to menu">
-    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
-    <span>stats</span>
+  <a class="s-back" href="../" aria-label="back to menu" data-cursor="menu">
+    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path class="hex" d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path class="eyes" d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+    <span class="s-path">~/<b>stats</b></span>
   </a>
   <span class="s-live" id="s-live" hidden><i aria-hidden="true"></i><b id="s-online">0</b> online now</span>
   <div class="s-tabs" id="s-tabs" role="group" aria-label="time range" hidden>
@@ -31,33 +38,41 @@
 
 <main class="s-view">
   <form class="s-key" id="s-key" hidden autocomplete="off">
-    <h1>stats</h1>
-    <label for="s-key-in">enter your stats key</label>
-    <div class="s-key-row">
-      <input id="s-key-in" type="password" maxlength="200" spellcheck="false" autocapitalize="off">
-      <button type="submit">open</button>
+    <div class="s-key-head" aria-hidden="true"><span>// private</span><span class="s-key-tag">auth</span></div>
+    <div class="s-key-body">
+      <h1 class="s-h1 glitch" data-text="stats" data-decode>stats</h1>
+      <p class="s-key-log" aria-hidden="true"><span>counts only, no cookies, no ip addresses</span><span>key required</span></p>
+      <label for="s-key-in">enter your stats key</label>
+      <div class="s-key-row">
+        <span class="s-prompt" aria-hidden="true">&gt;</span>
+        <input id="s-key-in" type="password" maxlength="200" spellcheck="false" autocapitalize="off">
+        <button type="submit">open</button>
+      </div>
+      <p class="s-msg" id="s-msg" role="status"></p>
     </div>
-    <p class="s-msg" id="s-msg" role="status"></p>
   </form>
 
-  <div id="s-board" hidden>
+  <div class="s-board" id="s-board" hidden>
     <section class="s-tiles" aria-label="totals">
-      <div class="s-tile"><span>unique visitors</span><b id="t-visitors">0</b><small>added up per day</small></div>
-      <div class="s-tile"><span>visits</span><b id="t-visits">0</b><small>new after 30 min away</small></div>
-      <div class="s-tile"><span>page views</span><b id="t-views">0</b><small id="t-per"></small></div>
-      <div class="s-tile"><span>games played</span><b id="t-plays">0</b><small>games opened</small></div>
+      <div class="s-tile"><span><em aria-hidden="true">01</em>unique visitors</span><b id="t-visitors">0</b><small>added up per day</small><i class="s-spark" id="k-visitors" aria-hidden="true"></i></div>
+      <div class="s-tile"><span><em aria-hidden="true">02</em>visits</span><b id="t-visits">0</b><small>new after 30 min away</small><i class="s-spark" id="k-visits" aria-hidden="true"></i></div>
+      <div class="s-tile"><span><em aria-hidden="true">03</em>page views</span><b id="t-views">0</b><small id="t-per"></small><i class="s-spark" id="k-views" aria-hidden="true"></i></div>
+      <div class="s-tile"><span><em aria-hidden="true">04</em>games played</span><b id="t-plays">0</b><small>games opened</small><i class="s-spark" id="k-plays" aria-hidden="true"></i></div>
     </section>
 
     <section class="s-card" aria-labelledby="h-daily">
       <h2 id="h-daily">unique visitors per day</h2>
-      <div class="s-chart" id="s-chart"></div>
+      <div class="s-plot">
+        <div class="s-axis" aria-hidden="true"><span id="s-ymax">0</span><span id="s-ymid">0</span><span>0</span></div>
+        <div class="s-chart" id="s-chart"></div>
+      </div>
       <p class="s-tip" id="s-tip" role="status" hidden></p>
     </section>
 
     <div class="s-cols">
-      <section class="s-card" aria-labelledby="h-pages"><h2 id="h-pages">pages</h2><ol class="s-list" id="l-pages"></ol></section>
-      <section class="s-card" aria-labelledby="h-games"><h2 id="h-games">games</h2><ol class="s-list" id="l-games"></ol></section>
-      <section class="s-card" aria-labelledby="h-refs"><h2 id="h-refs">came from</h2><ol class="s-list" id="l-refs"></ol></section>
+      <section class="s-card" aria-labelledby="h-pages"><h2 id="h-pages">pages</h2><div class="s-th" aria-hidden="true"><span>#</span><span>page</span><span>share</span><span>n</span></div><ol class="s-list" id="l-pages"></ol></section>
+      <section class="s-card" aria-labelledby="h-games"><h2 id="h-games">games</h2><div class="s-th" aria-hidden="true"><span>#</span><span>game</span><span>share</span><span>n</span></div><ol class="s-list" id="l-games"></ol></section>
+      <section class="s-card" aria-labelledby="h-refs"><h2 id="h-refs">came from</h2><div class="s-th" aria-hidden="true"><span>#</span><span>site</span><span>share</span><span>n</span></div><ol class="s-list" id="l-refs"></ol></section>
     </div>
 
     <section class="s-card" aria-labelledby="h-recent">
@@ -68,5 +83,8 @@
   </div>
 </main>
 <noscript><p class="s-msg">This page needs JavaScript.</p></noscript>
+
+<div class="fx fx-grain" aria-hidden="true"></div>
+<div class="fx fx-scan" aria-hidden="true"></div>
 </body>
 </html>

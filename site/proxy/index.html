@@ -12,43 +12,54 @@
 <link rel="stylesheet" href="../css/base.css">
 <link rel="stylesheet" href="../css/fx.css">
 <link rel="stylesheet" href="../css/proxy.css">
+<link rel="stylesheet" href="../css/eggs.css">
 <script src="../js/early.js"></script>
 <script src="../js/fx.js" defer></script>
 <script src="../js/proxy.js" defer></script>
 <script src="../js/hit.js" defer></script>
+<script src="../js/eggs.js" defer></script>
+<script src="../js/hunt.js" defer></script>
 </head>
 <body>
+<canvas id="rain" aria-hidden="true"></canvas>
 
-<header class="p-top">
-  <a class="p-logo" href="../" aria-label="back to menu">
-    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+<header class="p-top" id="p-top">
+  <a class="p-logo" href="../" aria-label="back to menu" data-cursor="menu">
+    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path class="hex" d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path class="eyes" d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
   </a>
+  <span class="p-crumb" aria-hidden="true">~/<b>p</b><span id="p-crumb-h"></span></span>
   <div class="p-nav">
-    <button type="button" class="p-ic" id="p-back" aria-label="back" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <button type="button" class="p-ic" id="p-fwd" aria-label="forward" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
-    <button type="button" class="p-ic" id="p-reload" aria-label="reload" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
+    <button type="button" class="p-ic" id="p-back" aria-label="back" data-cursor="back" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button type="button" class="p-ic" id="p-fwd" aria-label="forward" data-cursor="forward" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    <button type="button" class="p-ic" id="p-reload" aria-label="reload" data-cursor="reload" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
   </div>
   <form class="p-bar" id="p-form" role="search" autocomplete="off">
     <label class="sr" for="p-url">search or type a web address</label>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+    <span class="p-prompt" aria-hidden="true">&gt;</span>
     <input id="p-url" type="text" inputmode="url" maxlength="2000" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="go" placeholder="search or type a web address">
+    <kbd class="p-kbd" aria-hidden="true">enter</kbd>
+    <span class="p-hint" aria-hidden="true"><b>enter</b> opens an address &middot; words search <b>duckduckgo</b></span>
   </form>
   <div class="p-nav">
-    <button type="button" class="p-pill" id="p-engine" aria-label="switch engine"></button>
-    <button type="button" class="p-ic" id="p-home" aria-label="new page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-    <button type="button" class="p-ic" id="p-full" aria-label="fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button type="button" class="p-pill" id="p-engine" aria-label="switch engine" data-cursor="switch engine"></button>
+    <button type="button" class="p-ic" id="p-home" aria-label="new page" data-cursor="new page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button type="button" class="p-ic" id="p-full" aria-label="fullscreen" data-cursor="fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
   </div>
+  <div class="p-load" aria-hidden="true"><i></i></div>
 </header>
 
 <main class="p-view">
   <section class="p-start" id="p-start">
-    <h1 class="p-h1">where to?</h1>
-    <p class="p-sub" id="p-status" role="status">starting up</p>
+    <p class="p-path" aria-hidden="true">// <b>new page</b></p>
+    <h1 class="p-h1 glitch" id="p-h1" data-text="where to?" data-decode>where to?</h1>
+    <p class="p-sub is-busy" id="p-status" role="status">starting up</p>
     <div class="p-quick" id="p-quick" hidden></div>
 
     <form class="p-key" id="p-key" hidden autocomplete="off">
-      <label class="p-sub" for="p-key-in">this proxy needs an access key</label>
+      <div class="p-key-head" aria-hidden="true"><span>// access</span><span class="p-key-tag">locked</span></div>
+      <label class="p-key-l" for="p-key-in">this proxy needs an access key</label>
       <div class="p-key-row">
+        <span class="p-prompt" aria-hidden="true">&gt;</span>
         <input id="p-key-in" type="password" maxlength="200" spellcheck="false" autocapitalize="off" placeholder="access key">
         <button type="submit" class="p-btn is-solid">unlock</button>
       </div>

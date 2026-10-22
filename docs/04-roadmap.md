@@ -42,6 +42,48 @@
 - Known: YouTube intermittently returns 502/504. The client retries once; a topic that still fails is skipped for that batch.
 - Not verified: Safari, Firefox, a real phone, and how the feed feels after days of real use.
 
+## Visual overhaul (2026-10-19)
+- [x] Every page restyled in the black-and-white terminal theme: menu, boot, 404, all YouTube views, games and player, proxy (both engines), stats. See `02-design.md` and `05-decisions.md`.
+- Verified in headless Chrome against the real `server.mjs` at 1440 px and 375 px:
+  - **Errors:** no exceptions and no CSP violations from our own pages.
+  - **Hosts contacted:**
+    - menu, 404 and stats: self only
+    - YouTube: self, `i.ytimg.com` and `www.youtube-nocookie.com`
+  - **Phone:** no horizontal scroll at 375 px on any page.
+  - **Flows:**
+    - menu keyboard and boot skip
+    - onboarding builds a feed, which lands on #/home with 48 cards
+    - infinite scroll (48 → 144 cards)
+    - like toast, reel j/k
+    - games search, saved filter, opening and closing the player
+    - proxy address bar in both engines, stats wrong key
+  - **Reduced motion:** static frames on the menu, YouTube home and games.
+  - **Speed:** about 16.6 ms per frame while scrolling 144 cards.
+- Not verified:
+  - Safari, Firefox and a real phone.
+  - The stats dashboard with a real `STATS_KEY` (only checked with fake data).
+  - The proxy access-key dialog with a real key.
+
+## Effect levels, easter eggs, ghost AI (2026-10-19)
+- [x] Effect levels (high/mid/low) with automatic detection, 15 easter eggs, and the hidden `/ghost/` AI terminal. Decisions are in `05-decisions.md`.
+- Verified in headless Chrome against the real server:
+  - **Effect levels:**
+    - no slowdown: stays high
+    - 4x/6x CPU slowdown: drops to mid/low after ~2.5 s, with 2-4x more idle main-thread time
+    - `?fx=` forces a level
+    - a cached level applies before first paint
+  - **Eggs:** every egg triggers on desktop and 375 px. Nothing fires while typing in a field, and the existing keyboard shortcuts still work.
+  - **Ghost:**
+    - the door works from the mask, the logo and the console
+    - asleep state without a key
+    - mock streaming
+    - limits return 400/413/415/429
+    - server tests pass (45)
+    - a real conversation on Haiku 5.5 (2026-10-21), through curl and through the page
+  - No console errors, CSP violations or new hosts, and no horizontal scroll at 375 px.
+- Not verified:
+  - real weak hardware, Safari / iPad, and real phone touch input
+
 ## Phase 3 - Settings panel
 - Tab cloak, `about:blank` launcher, panic key, plus the on-page note on what they do and do not hide.
   - The CSP already allows `frame-src 'self'` and `frame-ancestors 'self'` for the launcher. Note: an `about:blank` window inherits the opener's CSP.

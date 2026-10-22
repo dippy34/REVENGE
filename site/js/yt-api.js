@@ -212,5 +212,14 @@
     return 'https://i.ytimg.com/vi/' + v.id + (v.short ? '/hqdefault.jpg' : '/mqdefault.jpg');
   }
 
-  window.ytApi = { search: search, channel: channel, details: details, thumb: thumb };
+  // srcset for a video's 16:9 thumbnail: the light size plus a sharper one
+  // for dense screens. Same host, same video; the browser picks one. Shorts
+  // keep their single vertical frame. (Read-only helper for the UI.)
+  function thumbSet(v) {
+    if (!v || v.short || !ID.test(v.id)) return '';
+    var base = 'https://i.ytimg.com/vi/' + v.id + '/';
+    return base + 'mqdefault.jpg 320w, ' + base + 'hqdefault.jpg 480w';
+  }
+
+  window.ytApi = { search: search, channel: channel, details: details, thumb: thumb, thumbSet: thumbSet };
 })();

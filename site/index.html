@@ -11,10 +11,13 @@
 <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/fx.css">
+<link rel="stylesheet" href="css/eggs.css">
 <script src="js/early.js"></script>
 <script src="js/fx.js" defer></script>
 <script src="js/menu.js" defer></script>
 <script src="js/hit.js" defer></script>
+<script src="js/eggs.js" defer></script>
+<script src="js/hunt.js" defer></script>
 </head>
 <body>
 <canvas id="rain" aria-hidden="true"></canvas>
@@ -23,19 +26,23 @@
 <main class="shell">
   <header class="top">
     <span class="home" aria-hidden="true">
-      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor"><path d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor"><path class="mark-hex" pathLength="1" d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path class="mark-eye" d="M10 14.5h4.5" stroke-width="2.4"/><path class="mark-eye" d="M17.5 14.5H22" stroke-width="2.4"/></svg>
     </span>
     <span class="clock" data-clock aria-hidden="true">t+00:00:00</span>
   </header>
 
   <div class="stage">
-    <h1 class="digest glitch" data-digest data-text="631cb8a9"><span class="sr">631cb8a9</span><span aria-hidden="true" data-churn>631cb8a9</span></h1>
+    <canvas class="obj" data-obj="mark" aria-hidden="true"></canvas>
+
+    <div class="title">
+      <h1 class="digest glitch" data-digest data-tilt data-lock data-text="631cb8a9"><span class="sr">631cb8a9</span><span aria-hidden="true" data-churn>631cb8a9</span></h1>
+    </div>
 
     <nav aria-label="sections">
       <ul class="menu">
-        <li><a class="item" href="youtube/" aria-label="youtube"><span class="label" data-scramble>youtube</span></a></li>
-        <li><a class="item" href="games/" aria-label="games"><span class="label" data-scramble>games</span></a></li>
-        <li><a class="item" href="proxy/" aria-label="proxy"><span class="label" data-scramble>proxy</span></a></li>
+        <li><a class="item" href="youtube/" aria-label="youtube" data-cursor="open"><span class="item-idx" aria-hidden="true">01</span><span class="label" data-scramble>youtube</span><span class="item-end" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h16M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></li>
+        <li><a class="item" href="games/" aria-label="games" data-cursor="open"><span class="item-idx" aria-hidden="true">02</span><span class="label" data-scramble>games</span><span class="item-end" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h16M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></li>
+        <li><a class="item" href="proxy/" aria-label="proxy" data-cursor="open"><span class="item-idx" aria-hidden="true">03</span><span class="label" data-scramble>proxy</span><span class="item-end" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h16M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></li>
       </ul>
     </nav>
   </div>
