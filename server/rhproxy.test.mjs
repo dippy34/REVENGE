@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
+import vm from 'node:vm';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -229,6 +230,20 @@ test('the real Rammerhead process: proxies a page, strips headers, writes no log
   const hh = await request(port, { path: '/hammerhead.js' });
   assert.equal(hh.status, 200);
   assert.match(hh.body, /\.frameElement;return f&&!\w+\.parent\["%hammerhead%"\]\?null:f/);
+  // ...and patched so hammerhead starts in Safari 26+, where style properties live on
+  // CSSStyleProperties.prototype (see rammerhead.cjs). Run the served feature check
+  // against each browser's layout: only WebKit's changes, Chrome and Firefox are as before.
+  assert.doesNotMatch(hh.body, /this\.window\.CSS2Properties\.prototype/);
+  assert.equal(hh.body.split('(this.window.CSS2Properties||this.window.CSSStyleProperties).prototype').length, 3);
+  const check = /css2PropertiesProtoContainsAllProps=(!!\(window\.CSS2Properties\|\|.*?"background"\)\))/.exec(hh.body);
+  assert.ok(check, 'the CSSStyleProperties feature check is in the served client');
+  const protoHasAll = (window) => vm.runInNewContext(check[1], { window });
+  const F = function () {};
+  assert.equal(protoHasAll({ CSSStyleProperties: F, CSSStyleDeclaration: { prototype: {} } }), true, 'Safari 26+ (WebKit 27)');
+  assert.equal(protoHasAll({ CSSStyleProperties: F, CSSStyleDeclaration: { prototype: { background: '' } } }), false, 'Chrome');
+  assert.equal(protoHasAll({ CSSStyleDeclaration: { prototype: { background: '' } } }), false, 'Chrome without CSSStyleProperties');
+  assert.equal(protoHasAll({ CSS2Properties: F, CSSStyleDeclaration: { prototype: {} } }), true, 'Firefox');
+  assert.equal(protoHasAll({ CSSStyleDeclaration: { prototype: {} } }), false, 'old Safari (properties on each element)');
   // Rammerhead's own 'disabled' log level logs everything; make sure it stays silent
   assert.equal(output, 0, 'rammerhead must write nothing to stdout/stderr');
 });

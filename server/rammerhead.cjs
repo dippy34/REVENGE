@@ -106,11 +106,29 @@ const proxy = new RammerheadProxy({
 // script is patched here, in memory: when the parent window is not a proxied page
 // (it is our UI), hammerhead sees no frame element. Nested proxied frames are as before.
 const FRAME_ELEMENT = /function ([\w$]+)\s*\((\w+)\)\s*\{\s*try\s*\{\s*return \2\.frameElement;?\s*\}\s*catch\s*\(\w+\)\s*\{\s*return null;?\s*\}\s*\}/;
+// Safari 26 and later (WebKit 27) keep CSS style properties (style.background and the
+// rest) on CSSStyleProperties.prototype. hammerhead's start-up check only knows Firefox's
+// CSS2Properties, Chrome's CSSStyleDeclaration.prototype and old Safari's per-element
+// properties, so it reads a property descriptor that does not exist and throws. hammerhead
+// then never starts and every rewritten script fails (`__get$ is not a function`): pages
+// show their HTML and images but nothing their scripts draw. So CSSStyleProperties is
+// treated like CSS2Properties, only where Chrome's check fails (Chrome and Firefox as before).
+const CSS2_FEATURE = /(\w+)\.css2PropertiesProtoContainsAllProps=!!window\.CSS2Properties/;
+const CSS2_PROTO = 'this.window.CSS2Properties.prototype';
 const client = proxy.routes.get('GET /hammerhead.js');
-const clientSrc = String(client.handler.content);
+const original = String(client.handler.content);
+let clientSrc = original;
 if (FRAME_ELEMENT.test(clientSrc)) {
-  client.handler.content = Buffer.from(clientSrc.replace(FRAME_ELEMENT, (m, fn, w) =>
-    `function ${fn}(${w}){try{var f=${w}.frameElement;return f&&!${w}.parent["%hammerhead%"]?null:f}catch(e){return null}}`));
+  clientSrc = clientSrc.replace(FRAME_ELEMENT, (m, fn, w) =>
+    `function ${fn}(${w}){try{var f=${w}.frameElement;return f&&!${w}.parent["%hammerhead%"]?null:f}catch(e){return null}}`);
+}
+if (CSS2_FEATURE.test(clientSrc) && clientSrc.split(CSS2_PROTO).length === 3) {
+  clientSrc = clientSrc
+    .replace(CSS2_FEATURE, '$1.css2PropertiesProtoContainsAllProps=!!(window.CSS2Properties||window.CSSStyleProperties&&!Object.prototype.hasOwnProperty.call(window.CSSStyleDeclaration.prototype,"background"))')
+    .split(CSS2_PROTO).join('(this.window.CSS2Properties||this.window.CSSStyleProperties).prototype');
+}
+if (clientSrc !== original) {
+  client.handler.content = Buffer.from(clientSrc);
   client.handler.etag = require('node:crypto').createHash('md5').update(client.handler.content).digest('hex');
 }
 
