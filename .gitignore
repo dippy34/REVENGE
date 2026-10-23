@@ -4,3 +4,5 @@ node_modules/
 server/.data/
 server/.cache/
 /hunt/
+kyrie/.data/
+kyrie/.cache/

@@ -1,0 +1,18 @@
+{
+  "name": "kyrie",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Kyrie: a study app. Serves the site and a Claude flashcard endpoint that uses the owner's API key.",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && for f in js/*.js; do node --check $f || exit 1; done"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.135.0"
+  }
+}

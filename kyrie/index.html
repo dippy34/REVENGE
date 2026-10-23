@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Kyrie</title>
+  <meta name="description" content="Turn your notes, slides and textbooks into flashcards, quizzes, practice tests and games.">
+  <meta name="theme-color" content="#f5f5f7">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%224 4 24 24%22%3E%3Cpath d=%22M9.1 6.8v18.4%22 stroke=%22%230071e3%22 stroke-width=%224.4%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M15.1 16 22.9 7.6%22 stroke=%22%23ff5a5f%22 stroke-width=%224.4%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M15.1 16 22.9 24.4%22 stroke=%22%23ffb020%22 stroke-width=%224.4%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Apple devices use SF Pro (the system font); Inter is the closest match everywhere else. -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="nav no-print">
+    <div class="nav-in">
+      <a class="brand" href="#/" aria-label="Kyrie home">
+        <svg class="logo" width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.1 6.8v18.4" stroke="#0071e3" class="logo-stem" stroke-width="4.4" stroke-linecap="round"/><path d="M15.1 16 22.9 7.6" stroke="#ff5a5f" stroke-width="4.4" stroke-linecap="round"/><path d="M15.1 16 22.9 24.4" stroke="#ffb020" stroke-width="4.4" stroke-linecap="round"/></svg>
+        <span>Kyrie</span>
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a href="#/" data-nav="home">Home</a>
+        <a href="#/library" data-nav="library">Library</a>
+        <a href="#/progress" data-nav="progress">Progress</a>
+        <a href="#/help" data-nav="help">Help</a>
+      </nav>
+      <div class="nav-right">
+        <a class="nav-icon" href="#/settings" data-nav="settings" aria-label="Settings" title="Settings"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></a>
+        <a class="btn btn-primary btn-xs nav-new" href="#/new">New deck</a>
+        <button class="nav-icon nav-burger" data-nav-toggle aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+      </div>
+    </div>
+    <nav class="nav-sheet" aria-label="Menu">
+      <a href="#/" data-nav="home">Home</a>
+      <a href="#/library" data-nav="library">Library</a>
+      <a href="#/progress" data-nav="progress">Progress</a>
+      <a href="#/new" data-nav="new">New deck</a>
+      <a href="#/settings" data-nav="settings">Settings</a>
+      <a href="#/help" data-nav="help">Help</a>
+    </nav>
+  </header>
+
+  <main id="view" class="view"></main>
+
+  <div class="drop-veil no-print" aria-hidden="true"><div><svg class="ic" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><strong>Drop to start a new deck</strong></div></div>
+  <div id="modal-root"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="js/util.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/parse.js"></script>
+  <script src="js/generate.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/quiz.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/pages.js"></script>
+  <script src="js/intro.js"></script>
+  <script src="js/modes.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
