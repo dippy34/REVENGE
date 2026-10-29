@@ -44,12 +44,13 @@
   // override (fx.tier.force), the measured tier cached by fx.js (fx.tier,
   // for 3 days and the same screen class), and on a first visit a guess
   // from device hints. fx.js measures and corrects it after load.
-  var TIERS = { high: 1, mid: 1, low: 1 };
+  // xlow (extra low) is only ever picked: it runs as low with html.fx-xlow
+  var TIERS = { high: 1, mid: 1, low: 1, xlow: 1 };
   var MAX_AGE = 3 * 864e5;
   var force = null, tier = null, src = 'hint', ls = null, weak = false;
   try { ls = window.localStorage; } catch (e) { /* blocked */ }
 
-  var q = /[?&]fx=(low|mid|high|auto)(?:&|#|$)/.exec(location.search);
+  var q = /[?&]fx=(xlow|low|mid|high|auto)(?:&|#|$)/.exec(location.search);
   if (q && ls) {
     try {
       // auto: forget the override and the measurement, measure again
@@ -94,6 +95,12 @@
     } catch (e) { /* bad entry: measure again */ }
   }
   if (!tier) tier = guess;
+  if (tier === 'xlow') {
+    // extra low: the low tier, and nothing moves (no boot, no curtain)
+    tier = 'low';
+    root.classList.add('fx-xlow');
+    root.classList.remove('boot', 'fx-in');
+  }
 
   root.setAttribute('data-fx', tier);
   // read once by fx.js, which owns the tier from here on

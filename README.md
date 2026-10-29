@@ -3,7 +3,7 @@
 A private site with no third-party tracking (only its own anonymous visit counter, see `docs/06-backend.md`): **YouTube**, **Games**, a **Proxy** (Scramjet for Chrome, Rammerhead for Safari and iPad, on our own Hetzner server), and **Other**, which holds **Music** (experimental).
 Black-and-white, high-effects, "anonymous" feel. Shared by word of mouth and direct URL only.
 
-> Status: **Phases 1-2 built** (menu, theme, effects, YouTube feed) plus **Games**, the **Proxy** (`server/`, see `docs/06-backend.md`) and **Music** under **Other** (experimental, 2026-10-29). The settings panel and Proxy are next. Build order is in `docs/04-roadmap.md`.
+> Status: **Phases 1-2 built** (menu, theme, effects, YouTube feed) plus **Games**, the **Proxy** (`server/`, see `docs/06-backend.md`), and under **Other**: **Music** (experimental), **Movies** and the **Chat** (2026-10-29). The settings panel and Proxy are next. Build order is in `docs/04-roadmap.md`.
 
 ## Doc index
 

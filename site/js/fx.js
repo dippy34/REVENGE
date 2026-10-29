@@ -9,9 +9,12 @@
      rain.pause() / rain.resume() / rain.burst(x, y, strength)
      burst(x, y, strength)  the same shockwave (strength 1 = a click)
      tier()               'high' | 'mid' | 'low', the effects level
-     setTier(t)           'high' | 'mid' | 'low' (kept) or 'auto'
+                          (extra low runs as 'low'; level() tells them apart)
+     level()              tier(), or 'xlow' for extra low
+     setTier(t)           'high' | 'mid' | 'low' | 'xlow' (kept) or 'auto'
                           (forget and measure again); every change sets
-                          html[data-fx] and fires window 'fx:tier'
+                          html[data-fx] and fires window 'fx:tier'; into
+                          or out of 'xlow' reloads the page
      perf()               what the tier was decided from (debugging)
      hold(on)             freeze the rain and the mask (and the tier
                           watchdog) while something covers the screen;
@@ -27,7 +30,7 @@
      [data-nolock]        no lock inside; the ring just grows
      [data-cursor="txt"]  tiny label next to the cursor
    Also: canvas#rain and canvas[data-obj] on any page, [data-tilt],
-   [data-digest] / [data-churn], [data-decode], [data-clock]. */
+   [data-digest] / [data-churn], [data-decode], [data-clock], [data-potato]. */
 (function () {
   'use strict';
 
@@ -35,7 +38,8 @@
   var page = root.getAttribute('data-page') || '';
   var mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   var mqFine = window.matchMedia('(hover: hover) and (pointer: fine)');
-  function reduced() { return mqReduce.matches; }
+  // extra low (html.fx-xlow, picked in the potato menu) counts as reduced motion
+  function reduced() { return mqReduce.matches || root.classList.contains('fx-xlow'); }
   function onChange(mq, fn) {
     if (mq.addEventListener) mq.addEventListener('change', fn);
     else if (mq.addListener) mq.addListener(fn);
@@ -117,6 +121,9 @@
   root.setAttribute('data-fx', tierNow);
 
   function tier() { return tierNow; }
+  // the level the visitor sees: a tier, or 'xlow' (extra low: the low tier
+  // with nothing moving, html.fx-xlow; only ever picked, never measured)
+  function level() { return root.classList.contains('fx-xlow') ? 'xlow' : tierNow; }
   function onTier(fn) { tierFns.push(fn); }
   function hi() { return tierNow === 'high'; }
   function lo() { return tierNow === 'low'; }
@@ -143,21 +150,26 @@
     if (weak) c.weak = true;
     try { localStorage.setItem('fx.tier', JSON.stringify(c)); } catch (e) { /* blocked */ }
   }
-  // A kept choice ('high' / 'mid' / 'low') wins until 'auto', which also
-  // forgets the measurement and probes again from the hints.
+  // A kept choice ('high' / 'mid' / 'low' / 'xlow') wins until 'auto', which
+  // also forgets the measurement and probes again from the hints. Extra low
+  // changes what reduced() says, which effects read as they start, so going
+  // into or out of it reloads the page.
   function setTier(t) {
+    var wasX = root.classList.contains('fx-xlow');
     if (t === 'auto') {
       try {
         localStorage.removeItem('fx.tier.force');
         localStorage.removeItem('fx.tier');
       } catch (e) { /* blocked */ }
+      if (wasX) { location.reload(); return; }
       tierSrc = 'hint';
       applyTier(tb.guess || 'high', 'auto');
       probe(300);
       return;
     }
-    if (ORDER.indexOf(t) < 0) return;
+    if (t !== 'xlow' && ORDER.indexOf(t) < 0) return;
     try { localStorage.setItem('fx.tier.force', t); } catch (e) { /* blocked */ }
+    if (t === 'xlow' || wasX) { location.reload(); return; }
     tierSrc = 'force';
     applyTier(t, 'set');
   }
@@ -284,6 +296,7 @@
           // a quick CPU that still fell short was probably a busy moment:
           // keep the result provisional so the next mask page measures again
           remember(t, !drew || (t !== 'high' && b < 3));
+          onMeasured();
         });
       });
     }, delay);
@@ -1552,6 +1565,145 @@
     paint();
   }
 
+  /* ---------- potato mode ---------- */
+
+  // [data-potato]: the effects level, beside the clock. Below max it reads
+  // "potato mode" and stands out (and says so once per visit when the site
+  // picked it); clicked, it opens a menu that says why, tags the level the
+  // measurement recommends for this device, and lets the visitor pick one
+  // (kept) or hand it back to auto.
+  var LEVELS = [
+    ['high', 'max', 'everything on'],
+    ['mid', 'medium', 'less rain, fewer glows'],
+    ['low', 'low', 'thin, slow rain, a still mask, no glows'],
+    ['xlow', 'extra low', 'nothing moves at all']
+  ];
+  function nameOf(t) {
+    for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i][0] === t) return LEVELS[i][1];
+    return t;
+  }
+  // what the measurement says this device should run, whatever is picked
+  function recommended() {
+    if (tierSrc !== 'force') return tierNow;
+    try {
+      var c = JSON.parse(localStorage.getItem('fx.tier') || 'null');
+      if (c && ORDER.indexOf(c.tier) >= 0 && c.sc === tb.sc && Date.now() - c.at < 3 * 864e5) return c.tier;
+    } catch (e) { /* blocked or bad entry */ }
+    return tb.guess || 'high';
+  }
+  var onMeasured = function () {};
+
+  function initPotato() {
+    var btn = document.querySelector('[data-potato]');
+    if (!btn) return;
+    var box = null;
+
+    function line(cls, text, parent) {
+      var p = make('p', cls, parent);
+      p.textContent = text;
+      return p;
+    }
+    function status(lv, rec, auto) {
+      if (lv === 'high') {
+        if (auto) return 'your device runs every effect.';
+        return rec === 'high' ? 'you picked max.' : 'you picked max. it may lag on this device: ' + nameOf(rec) + ' is recommended.';
+      }
+      if (auto) return 'your device is running on potato mode: it couldn’t draw every effect smoothly, so the site turned them down to stop lag.';
+      return 'you’re on potato mode because you picked ' + nameOf(lv) + '.' +
+        (ORDER.indexOf(rec) > ORDER.indexOf(lv) || lv === 'xlow' ? ' this device can run ' + nameOf(rec) + '.' : '');
+    }
+    function row(parent, cls, on, mark, name, desc, tag, pick) {
+      var b = make('button', cls + (on ? ' is-on' : ''), parent);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      make('span', 'potato-mark', b).textContent = mark;
+      var n = make('span', 'potato-name', b);
+      n.textContent = name;
+      if (tag) make('span', 'potato-rec', n).textContent = tag;
+      make('span', 'potato-desc', b).textContent = desc;
+      b.addEventListener('click', pick);
+    }
+    function render() {
+      box.textContent = '';
+      var lv = level(), rec = recommended(), auto = tierSrc !== 'force';
+      line('potato-h', '// effects', box);
+      line('potato-say', status(lv, rec, auto), box);
+      var list = make('div', 'potato-levels', box);
+      LEVELS.forEach(function (L) {
+        row(list, 'potato-lv', L[0] === lv, L[0] === lv ? '>' : '', L[1], L[2], L[0] === rec ? 'recommended' : '', function () {
+          if (L[0] !== lv || auto) setTier(L[0]);
+          if (box) render();
+        });
+      });
+      row(box, 'potato-auto', auto, auto ? '[x]' : '[ ]', 'auto', 'the site picks for this device and checks again every few days', '', function () {
+        if (!auto) setTier('auto');
+        if (box) render();
+      });
+    }
+    function close() {
+      if (!box) return;
+      box.remove();
+      box = null;
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    function open() {
+      tip(false);
+      box = make('div', 'potato-menu', btn.parentNode);
+      box.id = 'potato-menu';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-label', 'effects level');
+      render();
+      btn.setAttribute('aria-expanded', 'true');
+      var on = box.querySelector('.potato-lv.is-on');
+      if (on) on.focus();
+    }
+
+    // once per visit, when the site (not the visitor) turned things down
+    var tipEl = null, tipTimer = 0;
+    function tip(show) {
+      if (!show) {
+        clearTimeout(tipTimer);
+        if (tipEl) { tipEl.remove(); tipEl = null; }
+        return;
+      }
+      if (tipEl || box) return;
+      try {
+        if (sessionStorage.getItem('fx.potato')) return;
+        sessionStorage.setItem('fx.potato', '1');
+      } catch (e) { return; }
+      tipEl = make('p', 'potato-tip', btn.parentNode);
+      tipEl.setAttribute('role', 'status');
+      tipEl.textContent = 'heads up: your device is running on potato mode';
+      tipTimer = setTimeout(function () { tip(false); }, 6000);
+    }
+
+    function sync() {
+      var potato = level() !== 'high';
+      btn.classList.toggle('is-potato', potato);
+      btn.textContent = potato ? 'potato mode' : 'effects: max';
+      if (box) render();
+    }
+    // a guess is still being measured ('hint'): wait for the measurement
+    function measured() {
+      sync();
+      if (level() !== 'high' && tierSrc !== 'force' && tierSrc !== 'hint') setTimeout(function () { tip(true); }, 900);
+    }
+
+    btn.setAttribute('aria-controls', 'potato-menu');
+    btn.setAttribute('aria-haspopup', 'dialog');
+    btn.addEventListener('click', function () { if (box) close(); else open(); });
+    document.addEventListener('click', function (e) {
+      if (box && !box.contains(e.target) && !btn.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (box && e.key === 'Escape') { close(); btn.focus(); }
+    });
+    onTier(measured);
+    onMeasured = measured;
+    btn.hidden = false;
+    measured();
+  }
+
   /* ---------- boot screen ---------- */
 
   // Runs only when early.js set html.boot (first visit, motion allowed).
@@ -1821,6 +1973,7 @@
   /* ---------- start ---------- */
 
   initClock();
+  initPotato();
   initCursor();
   initNav();
   initScramble();
@@ -1849,6 +2002,7 @@
     burst: function (x, y, s) { rain.burst(x, y, s); },
     obj: obj,
     tier: tier,
+    level: level,
     setTier: setTier,
     hold: hold,
     perf: function () {

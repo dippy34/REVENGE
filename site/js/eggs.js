@@ -729,7 +729,7 @@
   }
 
   // Pages without the mask: hold the small hex logo for 1.5 s.
-  var LOGOS = '.yt-logo, .g-back, .s-back, .p-logo, .m-logo, .is-lost a.home';
+  var LOGOS = '.yt-logo, .g-back, .s-back, .p-logo, .m-logo, .ch-back, .is-lost a.home';
   var hold = { el: null, t: 0, x: 0, y: 0, ate: null };
   function initHold() {
     document.addEventListener('pointerdown', function (e) {
@@ -1212,7 +1212,7 @@
     mark('hello');
     toast('hello.', 2600);
     objCall('blink');
-    var logos = document.querySelectorAll('.home, .yt-logo, .g-back, .s-back, .p-logo, .m-logo');
+    var logos = document.querySelectorAll('.home, .yt-logo, .g-back, .s-back, .p-logo, .m-logo, .ch-back');
     Array.prototype.forEach.call(logos, function (l) {
       l.classList.remove('egg-wink');
       void l.getBoundingClientRect();

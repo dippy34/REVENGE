@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" data-page="proxy" data-site="https://movy.sx">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' data:; media-src 'none'; object-src 'none'; worker-src 'self'; manifest-src 'none'; frame-src 'self'; child-src 'self'; form-action 'self'; base-uri 'none'">
+<meta name="color-scheme" content="dark">
+<title>~/mv</title>
+<link rel="icon" href="../../assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../css/base.css">
+<link rel="stylesheet" href="../../css/fx.css">
+<link rel="stylesheet" href="../../css/proxy.css">
+<link rel="stylesheet" href="../../css/eggs.css">
+<script src="../../js/early.js"></script>
+<script src="../../js/fx.js" defer></script>
+<script src="../../js/proxy.js" defer></script>
+<script src="../../js/hit.js" defer></script>
+<script src="../../js/eggs.js" defer></script>
+<script src="../../js/hunt.js" defer></script>
+</head>
+<body>
+<canvas id="rain" aria-hidden="true"></canvas>
+
+<!-- one site through the proxy, with no browser around it: js/proxy.js
+     opens data-site behind this screen, reloads it once, then shows it -->
+<main class="p-view">
+  <section class="p-start" id="p-start">
+    <p class="p-path" aria-hidden="true">// <b>movies</b></p>
+    <h1 class="p-h1 glitch" id="p-h1" data-text="movies" data-decode>movies</h1>
+    <p class="p-sub is-busy" id="p-status" role="status">starting up</p>
+
+    <form class="p-key" id="p-key" hidden autocomplete="off">
+      <div class="p-key-head" aria-hidden="true"><span>// access</span><span class="p-key-tag">locked</span></div>
+      <label class="p-key-l" for="p-key-in">this proxy needs an access key</label>
+      <div class="p-key-row">
+        <span class="p-prompt" aria-hidden="true">&gt;</span>
+        <input id="p-key-in" type="password" maxlength="200" spellcheck="false" autocapitalize="off" placeholder="access key">
+        <button type="submit" class="p-btn is-solid">unlock</button>
+      </div>
+    </form>
+  </section>
+  <iframe class="p-frame" id="p-frame" title="movies" hidden></iframe>
+</main>
+<p class="p-toast" id="p-toast" role="status"></p>
+<noscript><p class="p-sub">This page needs JavaScript.</p></noscript>
+
+<div class="fx fx-grain" aria-hidden="true"></div>
+<div class="fx fx-scan" aria-hidden="true"></div>
+</body>
+</html>

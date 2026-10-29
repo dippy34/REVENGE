@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" data-page="chat">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'none'; form-action 'self'; base-uri 'none'">
+<meta name="color-scheme" content="dark">
+<title>~/chat</title>
+<link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/fx.css">
+<link rel="stylesheet" href="../css/chat.css">
+<link rel="stylesheet" href="../css/eggs.css">
+<script src="../js/early.js"></script>
+<script src="../js/fx.js" defer></script>
+<script src="../js/chat.js" defer></script>
+<script src="../js/hit.js" defer></script>
+<script src="../js/eggs.js" defer></script>
+<script src="../js/hunt.js" defer></script>
+</head>
+<body>
+<canvas id="rain" aria-hidden="true"></canvas>
+<div class="fx fx-vignette" aria-hidden="true"></div>
+
+<!-- the chat (server: server/chat.mjs); js/chat.js draws everything below the bar -->
+<main class="ch" id="ch">
+  <header class="ch-top">
+    <a class="ch-back" href="../" aria-label="back to menu" data-cursor="leave">
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true"><path class="hex" d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path class="eyes" d="M10 14.5h4.5M17.5 14.5H22" stroke-width="2.4"/></svg>
+      <span class="ch-path">~/<b>chat</b><span id="ch-where"></span></span>
+    </a>
+    <nav class="ch-tabs" id="ch-tabs" aria-label="chat" hidden>
+      <a class="ch-tab" href="#global" data-tab="global">[global]</a>
+      <a class="ch-tab" href="#rooms" data-tab="rooms">[rooms]</a>
+    </nav>
+    <button type="button" class="ch-me" id="ch-me" aria-haspopup="dialog" hidden></button>
+  </header>
+  <div class="ch-body" id="ch-body">
+    <p class="ch-wait">&gt; connecting<span aria-hidden="true">_</span></p>
+  </div>
+</main>
+
+<div class="ch-layer" id="ch-layer" hidden></div>
+<p class="ch-toast" id="ch-toast" role="status" aria-live="polite"></p>
+<noscript><p class="ch-wait">&gt; the chat needs javascript.</p></noscript>
+
+<div class="fx fx-grain" aria-hidden="true"></div>
+<div class="fx fx-scan" aria-hidden="true"></div>
+</body>
+</html>

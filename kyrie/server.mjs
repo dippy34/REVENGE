@@ -1,7 +1,7 @@
 // server.mjs: serves Kyrie and its one Claude endpoint, so visitors get
 // Claude-written cards without an API key of their own.
 //
-//   GET  /api/status  -> {"ai": true|false}
+//   GET  /api/status  -> {"ai": true|false, "rev": the deployed commit (KYRIE_REV, set by setup-native.sh)}
 //   POST /api/cards   {sources:[{name, text, images:[{mediaType, data}]}], count, focus}
 //                     -> application/x-ndjson, one JSON object per line:
 //                        {"type":"progress","part":1,"of":2}  (zero or more)
@@ -80,6 +80,8 @@ const RENAME = {
   games: 'flashcards',
   youtube: 'lectures',
   proxy: 'notes',
+  music: 'focus',
+  chat: 'groups',
   ghost: 'tutor',
   rx: 'quiz',
   stats: 'grades',
@@ -518,7 +520,7 @@ const server = http.createServer((req, res) => {
   } catch (e) {
     return send(res, 400, { error: 'bad url' });
   }
-  if (pathname === '/api/status' && req.method === 'GET') return send(res, 200, { ai: AI_ON });
+  if (pathname === '/api/status' && req.method === 'GET') return send(res, 200, { ai: AI_ON, rev: process.env.KYRIE_REV || '' });
   if (pathname === '/api/cards') {
     if (req.method !== 'POST') return send(res, 405, { error: 'POST only' }, { allow: 'POST' });
     return cards(req, res).catch(() => {

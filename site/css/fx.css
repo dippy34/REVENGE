@@ -816,3 +816,25 @@ html[data-fx="low"] :is(.p-q, .p-key) { filter: none !important; }
   }
   .digest { transform: none; }
 }
+
+/* ---------- extra low: picked in the potato menu ---------- */
+
+/* html.fx-xlow (early.js) runs as the low tier with reduced motion on top
+   (fx.js reduced() is true), and the rain and the grain, scanline and
+   vignette layers are gone. */
+html.fx-xlow .fx,
+html.fx-xlow #rain,
+html.fx-xlow .fx-tear,
+html.fx-xlow .glitch::before,
+html.fx-xlow .glitch::after,
+html.fx-xlow .is-glitching::before,
+html.fx-xlow .is-glitching::after { display: none !important; }
+html.fx-xlow *,
+html.fx-xlow *::before,
+html.fx-xlow *::after {
+  animation-duration: .01ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+}
+html.fx-xlow .digest { transform: none; }

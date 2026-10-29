@@ -10,12 +10,17 @@ export function isPlaying(): boolean {
   return st.status === 'playing' || st.status === 'buffering' || ((st.status === 'loading' || st.status === 'resolving') && st.intent === 'play');
 }
 
-/** Solid white square, the site's "play" button. */
+/** A song was asked for and is on its way (found, loaded or buffered). */
+export function isBusy(): boolean {
+  const st = svc().player.playback.value;
+  return (st.status === 'resolving' || st.status === 'loading' || st.status === 'buffering') && st.intent === 'play';
+}
+
+/** Solid white square, the site's "play" button. While a song loads, three dots pulse inside it. */
 export function PlayButton({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const p = svc().player;
-  const st = p.playback.value;
   const playing = isPlaying();
-  const busy = (st.status === 'resolving' || st.status === 'loading' || st.status === 'buffering') && st.intent === 'play';
+  const busy = isBusy();
   return (
     <button
       type="button"
@@ -26,7 +31,15 @@ export function PlayButton({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
       onClick={() => p.togglePlay()}
       disabled={!p.currentTrack.value}
     >
-      <Icon name={playing ? 'pause' : 'play'} size={size === 'lg' ? 26 : size === 'sm' ? 16 : 18} />
+      {busy ? (
+        <span class="m-dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+      ) : (
+        <Icon name={playing ? 'pause' : 'play'} size={size === 'lg' ? 26 : size === 'sm' ? 16 : 18} />
+      )}
     </button>
   );
 }
@@ -66,7 +79,7 @@ export function ProgressBar() {
   const source = p.source.value;
   const canSeek = caps.seek && !!duration && st.status !== 'resolving' && st.status !== 'error' && !!p.engine;
   return (
-    <div class="m-prog">
+    <div class={`m-prog${isBusy() ? ' is-busy' : ''}`}>
       <span class="m-time" aria-hidden="true">
         {formatTime(position)}
       </span>

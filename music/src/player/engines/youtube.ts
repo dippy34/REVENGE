@@ -5,8 +5,8 @@ import type { EngineCaps, EngineListener, LoadOptions, PlaybackEngine } from './
 /**
  * YouTube's no-cookie embed, driven by its postMessage protocol
  * (enablejsapi=1) without loading YouTube's iframe API script, the same way
- * the YouTube section does. The player stays visible with YouTube's own
- * controls; we only send play, pause, seek, volume and load commands.
+ * the YouTube section does. The video plays out of sight (surface.ts); we
+ * only send play, pause, seek, volume and load commands.
  */
 
 const EMBED = 'https://www.youtube-nocookie.com/embed/';

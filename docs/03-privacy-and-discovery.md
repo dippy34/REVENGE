@@ -48,6 +48,11 @@ Honest framing: "no trace whatsoever" is not achievable. Hosts, registrars, and 
 - Rate limits use a keyed hash of the IP, held in memory only and dropped after 10 minutes.
 - The page says this in one line under the input.
 
+## The chat
+- The server keeps what a chat needs and no more: names, password hashes, pictures (shrunk to 128px on the device before they are sent) and descriptions, the last 100 messages of each room, and bans, warnings and mutes. It keeps no IP addresses and writes no logs.
+- Guests disappear after a week unseen; a room quiet for two weeks with nobody in it is deleted with its messages.
+- Messages are shown as plain text only. Owner powers come from a password on the server, never from the code.
+
 ## Limits to state plainly
 - The host and network can still see that the domain was visited.
 - Anyone with the exact link can load the site.

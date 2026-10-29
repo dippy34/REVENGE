@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { svc } from '../../app/services';
 import { link } from '../../app/router';
-import { embedActive } from '../../player/surface';
 import type { PlaybackSource } from '../../core/types';
 import { artistHref, playlistMenu, trackMenu } from '../actions';
 import { Artwork } from '../components/Artwork';
@@ -12,12 +11,9 @@ import { openMenu } from '../overlays';
 import { nowPlayingOpen, nowPlayingTab, panel, setPanel } from '../state';
 import { ProgressBar, statusText, TransportControls, VolumeControl } from './PlayerControls';
 import { QueueView } from './QueueView';
-import { VideoSlot } from './Video';
 
 function kindLabel(s: PlaybackSource): string {
-  if (s.kind === 'preview') return '30s preview';
-  if (s.delivery === 'embed') return 'full · video';
-  return 'full';
+  return s.kind === 'preview' ? '30s preview' : 'full';
 }
 
 /** Where the song is playing from, as the server chose it. */
@@ -45,12 +41,11 @@ const TABS = [
   { id: 'queue', label: 'queue' },
 ] as const;
 
-/** Side panel on wide screens: the video (when YouTube plays), then now / queue. */
+/** Side panel on wide screens: now / queue. */
 export function RightPanel() {
   const tab = panel.value;
   const p = svc().player;
   const track = p.currentTrack.value;
-  const embed = embedActive.value;
   if (!tab) return null;
   return (
     <aside class="m-side" aria-label="Side panel">
@@ -64,12 +59,11 @@ export function RightPanel() {
           <Icon name="close" size={15} />
         </button>
       </div>
-      {embed ? <VideoSlot name="panel" /> : null}
       <div class="m-side-body" role="tabpanel">
         {tab === 'nowplaying' ? (
           track ? (
             <div class="m-side-now">
-              {!embed ? <Artwork art={track.artwork} size="large" seed={track.id} alt="" class="m-side-art" /> : null}
+              <Artwork art={track.artwork} size="large" seed={track.id} alt="" class="m-side-art" />
               <h2 class="m-side-t">{track.title}</h2>
               <p class="m-side-a">
                 {track.artists.map((a, i) => (
@@ -104,7 +98,6 @@ export function NowPlaying() {
   const track = p.currentTrack.value;
   const q = p.queue.value;
   const tab = nowPlayingTab.value;
-  const embed = embedActive.value;
   const desktop = useMedia('(min-width: 761px)');
   const ref = useRef<HTMLDivElement>(null);
   const start = useRef<{ y: number; t: number } | null>(null);
@@ -170,7 +163,9 @@ export function NowPlaying() {
       </header>
       <div class={`m-np-body${tab && desktop ? ' with-side' : ''}`}>
         <div class="m-np-main">
-          <div class={`m-np-visual${embed ? ' is-embed' : ''}`}>{embed ? <VideoSlot name="nowplaying" /> : <Artwork art={track.artwork} size="large" seed={track.id} alt="" eager />}</div>
+          <div class="m-np-visual">
+            <Artwork art={track.artwork} size="large" seed={track.id} alt="" eager />
+          </div>
           <div class="m-np-meta">
             <div class="m-np-text">
               <h2 class="m-np-t" ref={title}>

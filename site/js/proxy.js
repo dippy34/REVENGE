@@ -12,7 +12,12 @@
    ?engine=scramjet / ?engine=rammerhead) overrides it and is remembered.
    Works only on the server in server/, not on a static host. The terminal
    look (decoding address, loading line, quick tiles) is decoration on top
-   and calms down under reduced motion. */
+   and calms down under reduced motion.
+
+   proxy/media/ (movies in the menu) runs this same file with no browser around the page: its
+   <html data-site> names the one site it opens. The site loads behind a
+   loading screen, is reloaded once as soon as it has loaded (the first load
+   through the proxy sometimes comes up broken), then takes the window. */
 (function () {
   'use strict';
 
@@ -27,20 +32,24 @@
   ];
 
   var root = document.documentElement;
-  var form = document.getElementById('p-form');
-  var input = document.getElementById('p-url');
+  var only = root.getAttribute('data-site'); // media/: the one site, no browser shell
+
+  // media/ has no toolbar or quick links: loose stand-ins take their place
+  function el(id, tag) { return document.getElementById(id) || document.createElement(tag || 'div'); }
+  var form = el('p-form', 'form');
+  var input = el('p-url', 'input');
   var start = document.getElementById('p-start');
   var status = document.getElementById('p-status');
-  var quick = document.getElementById('p-quick');
+  var quick = el('p-quick');
   var keyForm = document.getElementById('p-key');
   var keyIn = document.getElementById('p-key-in');
   var iframe = document.getElementById('p-frame');
-  var back = document.getElementById('p-back');
-  var fwd = document.getElementById('p-fwd');
-  var reload = document.getElementById('p-reload');
+  var back = el('p-back', 'button');
+  var fwd = el('p-fwd', 'button');
+  var reload = el('p-reload', 'button');
   var toastEl = document.getElementById('p-toast');
   var title = document.getElementById('p-h1');
-  var crumb = document.getElementById('p-crumb-h');
+  var crumb = el('p-crumb-h', 'span');
 
   var frame = null;
   var pending = null; // a url asked for before we were ready
@@ -335,13 +344,58 @@
     input.blur();
     showAddr(url);
     if (!engine.ready()) { pending = url; return; }
-    start.hidden = true;
     iframe.hidden = false;
-    root.classList.add('browsing');
-    if (window.fx) window.fx.rain.pause();
+    if (only) watchOnly(); else showFrame();
     back.disabled = fwd.disabled = reload.disabled = false;
     loading(true);
     engine.open(url);
+  }
+
+  function showFrame() {
+    start.hidden = true;
+    root.classList.add('browsing');
+    if (window.fx) window.fx.rain.pause();
+  }
+
+  /* ---------- media/: one site, reloaded once, then shown ---------- */
+
+  // The frame's document, once it is the site's (not the empty first page).
+  function frameDoc() {
+    try {
+      var d = iframe.contentDocument;
+      return d && d.location.href !== 'about:blank' ? d : null;
+    } catch (e) { return null; }
+  }
+
+  var firstDoc = null, seen = null, seenAt = 0, watchTimer = 0, giveUp = 0;
+  function watchOnly() {
+    say('loading ' + new URL(only).hostname.replace(/^www\./, ''), false, true);
+    clearInterval(watchTimer);
+    watchTimer = setInterval(function () {
+      var d = frameDoc();
+      if (!d || d.readyState === 'loading') return;
+      if (!firstDoc) {
+        // the site has just loaded (or sat half-loaded for 5 s): once more,
+        // now that everything is warm
+        if (d !== seen) { seen = d; seenAt = Date.now(); }
+        if (d.readyState !== 'complete' && Date.now() - seenAt < 5000) return;
+        firstDoc = d;
+        say('almost there', false, true);
+        engine.reload();
+      } else if (d !== firstDoc) {
+        reveal();
+      }
+    }, 120);
+    // a site that never finishes loading still shows, as it is
+    giveUp = setTimeout(reveal, 25000);
+  }
+
+  function reveal() {
+    clearInterval(watchTimer);
+    clearTimeout(giveUp);
+    loading(false);
+    showFrame();
+    try { iframe.focus(); } catch (e) { /* gone */ }
   }
 
   /* ---------- quick links ---------- */
@@ -402,7 +456,7 @@
   function connect(key) {
     say('connecting', false, true);
     return engine.connect(key).then(function () {
-      say('search, or type a web address above.');
+      if (!only) say('search, or type a web address above.');
       showQuick();
       if (pending) { var p = pending; pending = null; open(p); }
     }, function (err) {
@@ -470,7 +524,7 @@
 
   // on the start screen: 1-6 open a quick link, / jumps to the address bar
   document.addEventListener('keydown', function (e) {
-    if (start.hidden || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (only || start.hidden || e.metaKey || e.ctrlKey || e.altKey) return;
     var t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
     if (e.key === '/') { e.preventDefault(); input.focus(); return; }
@@ -481,16 +535,18 @@
       open(QUICK[n - 1][1]);
     }
   });
-  document.getElementById('p-home').addEventListener('click', showStart);
-  document.getElementById('p-full').addEventListener('click', function () {
+  el('p-home', 'button').addEventListener('click', showStart);
+  el('p-full', 'button').addEventListener('click', function () {
     var el = iframe.hidden ? root : iframe;
     if (el.requestFullscreen) el.requestFullscreen();
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   });
 
-  // /proxy/?go=<url> opens straight away (used for escaped links)
+  // /proxy/?go=<url> opens straight away (used for escaped links); media/ opens its site
   var go = new URLSearchParams(location.search).get('go');
-  if (go) {
+  if (only) {
+    pending = only;
+  } else if (go) {
     history.replaceState(null, '', location.pathname);
     pending = toUrl(go);
     addr = input.value = pending;

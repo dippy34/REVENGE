@@ -13,7 +13,7 @@ import { Artwork } from './Artwork';
 /** Source tags, terminal style: what will actually play. */
 const LABELS: Record<Availability, { text: string; title: string; cls: string } | null> = {
   full: { text: 'full', title: 'Full track', cls: 'is-full' },
-  embed: { text: 'video', title: 'Full track in YouTube’s player', cls: 'is-video' },
+  embed: { text: 'full', title: 'Full track, played through YouTube', cls: 'is-full' },
   preview: { text: '30s', title: 'Only a 30-second preview was found', cls: 'is-prev' },
   unavailable: { text: 'n/a', title: 'No playable source found', cls: 'is-na' },
 };

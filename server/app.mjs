@@ -17,6 +17,7 @@
 //   /api/music/*   the music player: pages, how each song plays, cover art and audio (see music.mjs)
 //   /api/ai        POST: the ghost's chat stream; /api/ai/status (see ai.mjs)
 //   /api/hunt/*    the weekly signal (see hunt.mjs and docs/07-hunt.md); off without HUNT_ secrets
+//   /api/chat/*    the chat: global, rooms, accounts, live updates (see chat.mjs)
 //
 // Nothing is logged: no access log, and Wisp's own logging is switched off.
 //
@@ -38,6 +39,9 @@
 //   AI_MODEL     model id (default claude-haiku-5-5)
 //   AI_DAILY_MAX requests per day for everyone together (default 300)
 //   AI_MOCK=1    canned replies, no key and no network (development)
+//   CHAT_OWNER_PASSWORD  the password of the chat's owner account (631); without
+//                it nobody can sign in as the owner
+//   CHAT_DIR     where the chat is saved (default STATS_DIR)
 //   (the ghost's per-visitor limit trusts X-Forwarded-For from a loopback or
 //   private peer only, so keep a reverse proxy in front: Caddy or the tunnel)
 import fs from 'node:fs';
@@ -54,6 +58,7 @@ import { createRh, isRhRequest } from './rhproxy.mjs';
 import { createAi } from './ai.mjs';
 import { createHunt } from './hunt.mjs';
 import { createMusic } from './music.mjs';
+import { createChat } from './chat.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -92,6 +97,10 @@ export function createApp({ env = process.env, host = '127.0.0.1', rename = null
   });
   const tube = createTube();
   const music = createMusic({ env });
+  const chat = createChat({
+    dir: path.resolve(env.CHAT_DIR || env.STATS_DIR || path.join(here, '.data')),
+    ownerPassword: env.CHAT_OWNER_PASSWORD || ''
+  });
   const hunt = createHunt({ siteDir: SITE, env, host }); // throws when it cannot start
   const ai = createAi({
     apiKey: env.ANTHROPIC_API_KEY || '',
@@ -242,6 +251,7 @@ addEventListener("fetch", (e) => {
     if (req.method === 'POST' && urlPath === '/api/p') return stats.hit(req, res);
     if (req.method === 'POST' && urlPath === '/api/ai') return ai.handle(req, res);
     if (urlPath.startsWith('/api/hunt/')) return hunt.handle(req, res);
+    if (urlPath.startsWith('/api/chat/')) return chat.handle(req, res);
     if (isRhRequest(req.method, req.url)) return rh.handle(req, res);
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       return send(res, 405, { allow: 'GET, HEAD' }, '');
@@ -312,7 +322,7 @@ addEventListener("fetch", (e) => {
     handle,
     upgrade,
     // save the counts (call before the process stops)
-    flush() { stats.flush(); hunt.flush(); },
-    summary() { return `proxy key ${KEY ? 'on' : 'off'}, stats page ${env.STATS_KEY ? 'on' : 'off'}, ${hunt.summary()}`; }
+    flush() { stats.flush(); hunt.flush(); chat.flush(); },
+    summary() { return `proxy key ${KEY ? 'on' : 'off'}, stats page ${env.STATS_KEY ? 'on' : 'off'}, ${hunt.summary()}, ${chat.summary()}`; }
   };
 }

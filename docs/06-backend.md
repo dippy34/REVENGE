@@ -205,6 +205,30 @@ The YouTube feed used to call `nova-hub.dev`. It now stays on this origin:
 No YouTube Data API key. Queries are not written down. GitHub Pages has no server,
 so the feed only works here.
 
+## Chat backend (`/api/chat/*`)
+
+`server/chat.mjs` runs the chat (`site/chat/`, `chat` under the menu's `other`;
+`/groups/` on Kyrie). One global room, rooms anyone can open (public, or private
+behind a password), guests and accounts, room admins, and the owner.
+
+| Route | Does |
+|---|---|
+| `POST hello {name}` | is the name free, an account, the owner (631) or in use by a guest |
+| `POST guest {name}`, `POST signup {name, password}` | a guest name, or an account (the name is kept) |
+| `POST login {name, password}`, `POST claim {password}`, `POST logout` | back into an account; a guest keeps their name |
+| `GET me`, `POST profile {bio, removePicture?}`, `POST ack` | who you are; a line about you; a warning was read |
+| `POST picture` (the raw image), `GET picture?u=&v=` | your picture: PNG, JPEG or WebP, 64 KB at most (the page crops it to a 128px square first); anyone's, served only as that image type, sandboxed |
+| `GET rooms`, `POST create {name, password?}`, `POST join {room, password?}` | the list; a new room (you are its admin); a private room asks for its password once |
+| `POST send {room, text}`, `GET stream?room=` | a message; server-sent events for one room (`hello`, `msg`, `del`, `clear`, `online`, `room`, `gone`, `warn`, `mute`, `ban`, `rooms`) |
+| `GET user?id=&room=`, `GET bans`, `POST mod {action, ...}` | a profile card; the owner's ban list; moderation (below) |
+
+- **Powers:** a room's admins delete messages, clear the room, make admins, kick (5 minutes), ban from the room, set or remove the password and rename it. Its creator also removes admins and deletes it. The owner can do all of that in every room and walks into private rooms without the password; the owner also warns (the person sees it from the little guy and must acknowledge it), mutes (10 minutes to a week), bans and unbans anyone from the whole chat, and removes anyone's picture and description. Nobody can act on the owner.
+- **The owner (631):** signs in with `CHAT_OWNER_PASSWORD` from the server's settings, never from the repository. Set it once with the Kyrie update (`CHAT_OWNER_PASSWORD=... DOMAIN=... bash /opt/revenge/kyrie/setup-native.sh` saves it in `/etc/kyrie.env`); without it nobody can sign in as 631. Kyrie can also deploy itself on every push to `main` (`AUTODEPLOY=1`, see `kyrie/README.md`).
+- **Sign-in:** an HttpOnly session cookie (`chat_s`, 30 days, path `/api/chat`); passwords are scrypt hashes. A second cookie (`chat_d`) marks the device: a ban covers every device the person signed in from. Nothing goes by IP address, because a whole school shares one.
+- **Limits:** 20 new pictures per person per hour; 5 messages per 5 seconds per person, 500 characters, 12 lines; 6 wrong passwords per name (or room) per visitor in 15 minutes, 30 wrong owner passwords per hour from everyone together; 120 new names per visitor per hour; 5 rooms per person, 300 in all; 8 open streams per person.
+- **Kept** in `chat.json` in `CHAT_DIR` (default `STATS_DIR`: `/var/lib/kyrie` on the box), written a few seconds after a change: accounts, guests (until a week unseen), hashed sessions, rooms with their last 100 messages (a room quiet for two weeks with nobody in it goes), bans, warnings and mutes; pictures in `pictures/` beside it, one per person, deleted when they remove it, the owner removes it, or the guest expires. No IP addresses and no logs.
+- **Tests:** `server/chat.test.mjs` (run by `npm run check`).
+
 ## Music backend (`/api/music/*`)
 
 `server/music.mjs` does the music player's work (`site/music/`, source in `music/`).

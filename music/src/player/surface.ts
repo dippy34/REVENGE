@@ -1,27 +1,22 @@
 import { signal } from '@preact/signals';
 
 /**
- * The visible surface for the YouTube embed.
+ * Where the YouTube embed lives.
  *
- * YouTube's terms require the player to stay visible, and moving an
- * <iframe> in the DOM reloads it. So there is exactly one fixed-position host
- * element, outside the UI tree, that is laid over whichever "slot" the UI
- * currently shows (the Now Playing view, the side panel, or the floating
- * dock). When an embed is active the surface is always on screen at 200×200
- * CSS pixels or larger.
+ * Songs from YouTube play through its no-cookie embed with the video out of
+ * sight: the player sits in one fixed-position host element, outside the UI
+ * tree (moving an <iframe> in the DOM reloads it), that is transparent and
+ * lets every click through. It only shows when a phone will not start the
+ * player without a tap inside it: the UI then mounts the dock (Video.tsx)
+ * and the host is laid over the dock's slot until the song plays.
  */
 
-export type SlotName = 'nowplaying' | 'panel' | 'dock';
-
-const PRIORITY: Record<SlotName, number> = { nowplaying: 3, panel: 2, dock: 1 };
 const MIN = 200;
 
-/** Which embed (if any) is active. The UI shows the dock when no other slot is visible. */
+/** Which embed (if any) is loaded. */
 export const embedActive = signal<'youtube' | null>(null);
-/** Name of the slot the surface is attached to. */
-export const activeSlot = signal<SlotName | null>(null);
 
-const slots = new Map<SlotName, HTMLElement>();
+let slot: HTMLElement | null = null;
 let host: HTMLDivElement | null = null;
 let frame = 0;
 
@@ -46,53 +41,40 @@ export function ytContainer(): HTMLElement {
   return document.getElementById('m-yt-player') ?? (host!.querySelector('.m-embed-yt') as HTMLElement);
 }
 
-export function registerSlot(name: SlotName, el: HTMLElement): () => void {
-  slots.set(name, el);
+/** The dock's placeholder: while one is mounted, the player is shown over it. */
+export function registerSlot(el: HTMLElement): () => void {
+  slot = el;
   schedule();
   return () => {
-    if (slots.get(name) === el) slots.delete(name);
+    if (slot === el) slot = null;
     schedule();
   };
-}
-
-function visible(el: HTMLElement): DOMRect | null {
-  if (!el.isConnected) return null;
-  const r = el.getBoundingClientRect();
-  if (r.width < 2 || r.height < 2) return null;
-  if (r.bottom < 0 || r.right < 0 || r.top > window.innerHeight || r.left > window.innerWidth) return null;
-  const style = getComputedStyle(el);
-  if (style.visibility === 'hidden' || style.display === 'none') return null;
-  return r;
 }
 
 function layout(): void {
   frame = 0;
   const h = surfaceHost();
   const kind = embedActive.value;
-  if (!kind) {
-    if (!h.hidden) h.hidden = true;
-    if (activeSlot.value) activeSlot.value = null;
+  h.hidden = !kind;
+  if (!kind) return;
+  const rect = slot?.isConnected ? slot.getBoundingClientRect() : null;
+  const away = !rect || rect.width < 2 || rect.height < 2;
+  h.classList.toggle('is-away', away);
+  h.inert = away; // nothing to tab into or read out while it is out of sight
+  if (away) {
+    // Still laid out, at YouTube's minimum size, so it keeps playing.
+    Object.assign(h.style, { left: 'auto', top: 'auto', right: '0px', bottom: '0px', width: `${MIN}px`, height: `${MIN}px` });
     return;
   }
-  let best: { name: SlotName; rect: DOMRect } | null = null;
-  for (const [name, el] of slots) {
-    const rect = visible(el);
-    if (rect && (!best || PRIORITY[name] > PRIORITY[best.name])) best = { name, rect };
-  }
-  if (activeSlot.value !== (best?.name ?? null)) activeSlot.value = best?.name ?? null;
-  h.dataset.kind = kind;
-  if (!best) {
-    // No slot yet (e.g. the dock is mounting): park it bottom-right, still visible.
-    Object.assign(h.style, { left: 'auto', top: 'auto', right: '16px', bottom: '96px', width: 'min(356px, calc(100vw - 24px))', height: '200px' });
-  } else {
-    const { rect } = best;
-    const width = Math.max(MIN, rect.width);
-    const height = Math.max(MIN, rect.height);
-    Object.assign(h.style, { left: `${Math.round(rect.left)}px`, top: `${Math.round(rect.top)}px`, right: 'auto', bottom: 'auto', width: `${Math.round(width)}px`, height: `${Math.round(height)}px` });
-  }
-  h.hidden = false;
-  h.classList.toggle('is-yt', kind === 'youtube');
-  // Keep tracking while active: slots move with scrolling, panels and animations.
+  Object.assign(h.style, {
+    left: `${Math.round(rect.left)}px`,
+    top: `${Math.round(rect.top)}px`,
+    right: 'auto',
+    bottom: 'auto',
+    width: `${Math.round(Math.max(MIN, rect.width))}px`,
+    height: `${Math.round(Math.max(MIN, rect.height))}px`,
+  });
+  // Keep tracking while shown: the dock moves with the window and its animation.
   frame = requestAnimationFrame(layout);
 }
 

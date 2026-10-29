@@ -124,6 +124,126 @@ a.home { padding: 9px; margin: -9px; }
   white-space: pre;
 }
 
+/* the effects level beside the clock (fx.js). At max a quiet tag; below
+   it "potato mode", solid white, pulsing a few times as it appears. Both
+   open the level menu. */
+.potato {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 3px 8px 2px;
+  font: inherit;
+  font-size: 10.5px;
+  line-height: 1.4;
+  letter-spacing: .12em;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--line-3);
+  cursor: pointer;
+  transition: color .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.potato[hidden] { display: none; }
+/* a small chevron: it opens a menu */
+.potato::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-top: -3px;
+  border: solid currentColor;
+  border-width: 0 1px 1px 0;
+  transform: rotate(45deg);
+}
+.potato:hover,
+.potato:focus-visible,
+.potato[aria-expanded="true"] { color: var(--hi); border-color: currentColor; }
+.potato.is-potato {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--hi);
+  border-color: var(--hi);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), 0 0 18px rgba(255, 255, 255, .35);
+  animation: potato-pulse 1.4s var(--ease) 3;
+}
+.potato.is-potato:hover,
+.potato.is-potato:focus-visible,
+.potato.is-potato[aria-expanded="true"] { color: var(--bg); box-shadow: 0 0 0 3px rgba(255, 255, 255, .18), 0 0 26px rgba(255, 255, 255, .5); }
+@keyframes potato-pulse { 50% { box-shadow: 0 0 0 5px rgba(255, 255, 255, .1), 0 0 30px rgba(255, 255, 255, .55); } }
+
+.potato-menu,
+.potato-tip {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 5;
+  animation: potato-in .18s var(--ease-out);
+}
+.potato-menu {
+  width: min(360px, calc(100vw - 2 * var(--gutter)));
+  padding: 14px 12px 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--glow-box), 0 18px 50px rgba(0, 0, 0, .8);
+}
+.potato-menu p { margin: 0 4px 8px; }
+.potato-h { color: var(--dim); letter-spacing: .14em; }
+.potato-levels { display: grid; gap: 2px; margin: 4px 0 6px; }
+.potato-lv,
+.potato-auto {
+  display: grid;
+  grid-template-columns: 2.2em 1fr;
+  width: 100%;
+  padding: 6px 4px;
+  font: inherit;
+  text-align: left;
+  color: var(--dim);
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.potato-lv:hover,
+.potato-lv:focus-visible,
+.potato-auto:hover,
+.potato-auto:focus-visible { color: var(--fg); border-color: var(--line-2); }
+.potato-lv.is-on { color: var(--hi); background: rgba(255, 255, 255, .04); border-color: var(--line-3); }
+.potato-mark { grid-row: 1 / 3; color: var(--hi); }
+.potato-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.potato-desc { grid-column: 2; font-size: 11px; color: var(--dim); }
+.potato-lv.is-on .potato-desc { color: var(--fg); }
+/* the level this device is measured for, in the menu's "experimental" stripes */
+.potato-rec {
+  padding: 1px 5px 0;
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--hi);
+  border: 1px solid var(--line-3);
+  background: linear-gradient(-45deg, rgba(255, 255, 255, .1) 0 9%, transparent 9% 50%, rgba(255, 255, 255, .1) 50% 59%, transparent 59%) 0 0 / 8px 8px;
+}
+.potato-auto { margin-top: 4px; padding-top: 9px; border-top-color: var(--line); }
+.potato-auto.is-on { color: var(--fg); }
+
+/* once per visit, when the site turned the effects down */
+.potato-tip {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--bg);
+  background: var(--hi);
+  box-shadow: 0 0 24px rgba(255, 255, 255, .3);
+}
+@keyframes potato-in { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .potato.is-potato,
+  .potato-menu,
+  .potato-tip { animation: none; }
+}
+
 .stage {
   position: relative;
   flex: 1;

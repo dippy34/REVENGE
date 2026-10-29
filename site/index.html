@@ -28,6 +28,7 @@
     <span class="home" aria-hidden="true">
       <svg viewBox="0 0 32 32" fill="none" stroke="currentColor"><path class="mark-hex" pathLength="1" d="M16 3.5 27 9.75v12.5L16 28.5 5 22.25V9.75Z" stroke-width="2"/><path class="mark-eye" d="M10 14.5h4.5" stroke-width="2.4"/><path class="mark-eye" d="M17.5 14.5H22" stroke-width="2.4"/></svg>
     </span>
+    <button type="button" class="potato" data-potato data-hit aria-expanded="false" hidden>potato mode</button>
     <span class="clock" data-clock aria-hidden="true">t+00:00:00</span>
   </header>
 
@@ -48,6 +49,8 @@
       <ul class="menu menu-sub" id="other" aria-label="other">
         <li class="menu-path" aria-hidden="true"><span>~/other</span></li>
         <li><a class="item" href="music/" aria-label="music, experimental" data-cursor="open"><span class="item-idx" aria-hidden="true">01</span><span class="label" data-scramble>music</span><span class="item-tag" aria-hidden="true">experimental</span><span class="item-end" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h16M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></li>
+        <li><a class="item" href="proxy/media/" aria-label="movies" data-cursor="open"><span class="item-idx" aria-hidden="true">02</span><span class="label" data-scramble>movies</span><span class="item-end" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h16M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></li>
+        <li><a class="item" href="chat/" aria-label="chat" data-cursor="open"><span class="item-idx" aria-hidden="true">03</span><span class="label" data-scramble>chat</span><span class="item-end" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h16M13.5 6.5 19 12l-5.5 5.5"/></svg></span></a></li>
         <li><a class="item is-back" href="#" aria-label="back" data-back data-cursor="back"><span class="item-idx" aria-hidden="true">..</span><span class="label" data-scramble>back</span><span class="item-end" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12H5M10.5 6.5 5 12l5.5 5.5"/></svg></span></a></li>
       </ul>
     </nav>

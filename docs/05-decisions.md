@@ -17,7 +17,7 @@
   - On hover the hex churns and glitches, then settles back. It never decodes.
   - The word is not in `site/` in any form.
   - Tab titles are `~` (menu) and `~/v` (YouTube).
-- **Menu is minimal:** logo, clock, title, effects, and plain words (youtube, games, proxy). There is no footer, status line or route counter.
+- **Menu is minimal:** logo, clock, title, effects, and plain words (youtube, games, proxy, other). There is no footer, status line or route counter.
   - Locked entries are dim. Activating one shakes it and briefly scrambles it to "soon".
 - **Docs win over the original build prompt** on three points:
   - The settings panel stays in Phase 3.
@@ -177,21 +177,35 @@
   - **Storage:** none. Nothing is logged, and the conversation lives only in the page.
   - **Without `ANTHROPIC_API_KEY`** the page says "the ghost is asleep".
 - **New storage keys:**
-  - `localStorage`: `fx.tier` (the measured level), `fx.tier.force` (a forced level), `eggs` (found eggs), `eggs.snake` (snake high score)
-  - `sessionStorage`: `fx.tint`
+  - `localStorage`: `fx.tier` (the measured level), `fx.tier.force` (a picked level: `high`, `mid`, `low` or `xlow`), `eggs` (found eggs), `eggs.snake` (snake high score)
+  - `sessionStorage`: `fx.tint`, `fx.potato` (the potato mode note was shown this visit)
+
+### Chat (2026-10-29)
+- **What:** `chat` under the menu's `other` (`/chat/`, `/groups/` on Kyrie): global, rooms (public or private with a password; whoever makes one is its admin and can make others admins), profiles (a picture you upload, cropped to a square on your device, and a one-line description; without one, the first letter of your name), guests and accounts. The owner is the 631 account, titled `owner`, with powers across the whole chat. Details in `06-backend.md`.
+- **The owner's password is not in the repository:** it is public on GitHub, so anyone could read it there. It lives in the server's settings (`CHAT_OWNER_PASSWORD`).
+- **Bans by account and device, not IP:** a school shares one address, so an IP ban would ban everyone there. A ban can be dodged by clearing the browser; the owner bans again.
+- **Guests allowed:** you type a name and chat; giving it a password makes it an account. Guests and accounts are tagged so nobody passes for someone else, and names like owner, admin and mod are reserved.
+- **Server-sent events, not WebSockets:** one plain HTTP response per open room, which goes through Caddy and school filters like any page.
+
+### Movies (2026-10-29)
+- **What:** `movies` in the menu's `other` list opens `/proxy/media/` (tab title `~/mv`): movy.sx through the proxy, with no address bar, buttons or quick links. On Kyrie it is `/notes/media/`, like the rest of the proxy; the folder is called `media` so neither address says movies.
+- **How:** the same `site/js/proxy.js` as the proxy page; `<html data-site>` names the one site. It lives under `/proxy/` because the service worker's scope is `/proxy/`.
+- **One reload:** the first load through the proxy sometimes comes up broken, so the site loads unseen behind the start screen, is reloaded once as soon as it has loaded (or after 5 s half-loaded), and shows when the reload is in. After 25 s it shows whatever it has.
+- **Changing the site:** edit `data-site` in `site/proxy/media/index.html`.
 
 ### Music (2026-10-28, cut down 2026-10-29)
-- **What:** a bare-bones music player at `/music/` (tab title `~/m`), opened from the menu's `other` entry and tagged experimental. Source in `music/` (Preact, TypeScript, Vite), built into `site/music/`.
+- **What:** a bare-bones music player at `/music/` (`/focus/` on Kyrie; tab title `~/m`), opened from the menu's `other` entry and tagged experimental. Source in `music/` (Preact, TypeScript, Vite), built into `site/music/`.
 - **The server does the work** (`server/music.mjs`, routes in `06-backend.md`): it searches, builds the home, search, album and artist pages, and decides how each song plays. The browser only draws pages, plays what it is told, and keeps playlists.
 - **How a song plays, best first:**
   1. Audius: the full track, for songs that come from Audius
   2. YouTube's no-cookie player: the full song. The server finds the video with the YouTube section's own search and prefers the artist's channel, "Topic" audio uploads and a matching length; live takes, covers, remixes and the like are ranked down.
   3. Deezer: a licensed 30-second preview
-- **Labels:** songs show `full`, `video` or `30s` once known, and the player names the source.
-- **Kept from the first version:** the look, the player (queue, shuffle, repeat, media keys), the YouTube dock, phone layout.
+- **Labels:** songs show `full` or `30s` once known, and the player names the source.
+- **Kept from the first version:** the look, the player (queue, shuffle, repeat, media keys), phone layout.
 - **Dropped:** likes, history, lyrics, your own files, settings, genres and moods, recommendations, playlist import/export, the offline service worker, and catalogs other than Deezer and Audius (MusicBrainz, Internet Archive, Wikimedia, Wikidata, Wikipedia, iTunes, Jamendo, Discogs). The first version is backed up outside the repo (the owner's Trash, `revenge-old-music-backup-2026-10-29`).
 - **Not used:** Monochrome's TIDAL sources. They stream paid catalogs through shared app credentials and unofficial proxies, which is the "get around DRM or scrape protected audio" this site will not do.
-- **Will not do:** download or save streams, strip YouTube's ads, or hide, shrink or cover the YouTube player (it stays on screen at 200×200 or larger; dialogs open above the dock).
+- **The video is hidden (owner's call, 2026-10-29):** YouTube songs play with the player out of sight, transparent at 200×200 in a corner, and the player shows cover art. YouTube's embed terms ask for a visible player, so YouTube could stop embeds playing here. The one exception: a phone that will only start the player after a tap inside it gets a dock with the video until the song plays.
+- **Will not do:** download or save streams, or strip YouTube's ads.
 - **Storage:** `localStorage` only: `m.playlists` (each playlist keeps a copy of its songs), `m.queue`, `m.settings` (volume, mute), `m.panel`. If the browser refuses to save, playlists still work until the tab closes and the page says so.
 - **GitHub Pages:** there is no backend there, so the section opens but cannot search or play.
 - **Shared site code touched:** `site/index.html` (the `other` entry and `~/other` list), `site/js/menu.js` (the swap and its keys), `site/css/base.css` and `fx.css` (its layout and effects, and a delay for the fourth menu row), and `.m-logo` in the long-press ghost door in `site/js/eggs.js`.

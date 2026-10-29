@@ -58,6 +58,21 @@ The first run also needs `ANTHROPIC_API_KEY=...` (or it borrows the 631 site's k
 from `/etc/revenge.env`); it is saved in `/etc/kyrie.env`. Re-run the same command
 to update to the latest `main`.
 
+**Deploying by itself.** Run it once with `AUTODEPLOY=1` and the box keeps itself up
+to date: `kyrie-deploy.timer` checks `main` on GitHub every 2 minutes and, when it
+moved, runs `autodeploy.sh` (pull, then this script). If Kyrie does not come back up,
+it returns to the commit that was running and skips the bad one until `main` moves
+again. From then on a push to `main` is a deploy, so keep the GitHub account behind
+two-factor sign-in. `AUTODEPLOY=0` turns it off. `GET /api/status` answers with the
+running commit (`rev`), so anyone can check a push went live:
+
+```sh
+curl -s https://kyriestudy.com/api/status
+```
+
+Logs: `journalctl -u kyrie-deploy` (one line per deploy) and
+`/var/lib/kyrie-deploy/last.log` (the last setup's output).
+
 ## Data and privacy
 
 Decks and progress are saved in the browser's `localStorage` (key `kyrie.v1`), so they stay on that device and browser. Use Settings → Back up everything to move them. Study material leaves the browser only when the student picks Claude as the card maker; it goes to this site's server and from there to Anthropic, and is not stored.
@@ -78,6 +93,7 @@ kyrie/
   server.mjs       serves the app and /api/cards (holds the API key, enforces limits),
                    and the 631 site behind its door (../server/app.mjs, ../site)
   setup-native.sh  installs or updates Kyrie on the box (see above)
+  autodeploy.sh    the box's own deploys, every 2 minutes once AUTODEPLOY=1 (see above)
   js/quiz.js       builds questions (multiple choice, true/false, written) from cards
   js/ui.js         shared question card, settings, theme
   js/views.js      create flow, deck page, print

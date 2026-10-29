@@ -10,6 +10,12 @@
 #
 # Run as root, after server/setup-native.sh has run once:
 #   DOMAIN='kyriestudy.com, www.kyriestudy.com' ANTHROPIC_API_KEY=... bash kyrie/setup-native.sh
+# CHAT_OWNER_PASSWORD=... (once) sets the password of the chat's owner account,
+# 631; it is saved in /etc/kyrie.env like the key.
+# AUTODEPLOY=1 (once) makes the box deploy itself: kyrie-deploy.timer checks
+# main on GitHub every 2 minutes and runs kyrie/autodeploy.sh when it moved
+# (going back to the last good commit if Kyrie does not come up). AUTODEPLOY=0
+# turns that off again. NO_PULL=1 (used by autodeploy.sh) skips the pull.
 # Re-run any time to update to the latest main. ANTHROPIC_API_KEY is only needed
 # the first time (it is saved in /etc/kyrie.env); without one, the site's own key
 # from /etc/revenge.env is used if it has one.
@@ -38,7 +44,8 @@ if ss -Htln "sport = :$PORT" | grep -q . && ! systemctl is-active --quiet kyrie;
 fi
 
 echo "> code"
-git -C "$DIR" pull -q --ff-only
+[ "${NO_PULL:-}" = 1 ] || git -C "$DIR" pull -q --ff-only
+REV="$(git -C "$DIR" rev-parse --short HEAD)"
 (cd "$DIR/server" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund --loglevel=error)
 (cd "$DIR/kyrie" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund --loglevel=error)
 [ -f "$DIR/kyrie/server.mjs" ] || { echo "no kyrie/ in $DIR: is it on main yet?" >&2; exit 1; }
@@ -57,6 +64,8 @@ if [ -n "${ANTHROPIC_API_KEY:-}" ]; then setvar ANTHROPIC_API_KEY "$ANTHROPIC_AP
 elif [ -z "$(getvar ANTHROPIC_API_KEY "$ENVF")" ] && [ -n "$(getvar ANTHROPIC_API_KEY "$SITEENV")" ]; then
   setvar ANTHROPIC_API_KEY "$(getvar ANTHROPIC_API_KEY "$SITEENV")"
 fi
+# the chat's owner password: passed in (replaces the saved one), else kept
+if [ -n "${CHAT_OWNER_PASSWORD:-}" ]; then setvar CHAT_OWNER_PASSWORD "$CHAT_OWNER_PASSWORD"; fi
 # the proxy lock and the stats page follow the 631 site's settings on every run
 # (only these two: its hunt secrets stay with it, so the hunt is off on Kyrie)
 setvar ACCESS_KEY "$(getvar ACCESS_KEY "$SITEENV")"
@@ -73,7 +82,7 @@ Wants=network-online.target revenge-rh.service
 User=revenge
 WorkingDirectory=$DIR/kyrie
 EnvironmentFile=$ENVF
-Environment=KYRIE_HOST=127.0.0.1 KYRIE_PORT=$PORT NODE_ENV=production CACHE_DIR=/var/cache/kyrie STATS_DIR=/var/lib/kyrie RH_SOCKET=$RHSOCK
+Environment=KYRIE_HOST=127.0.0.1 KYRIE_PORT=$PORT NODE_ENV=production CACHE_DIR=/var/cache/kyrie STATS_DIR=/var/lib/kyrie RH_SOCKET=$RHSOCK KYRIE_REV=$REV
 StateDirectory=kyrie
 StateDirectoryMode=0750
 CacheDirectory=kyrie
@@ -102,6 +111,46 @@ EOF
 systemctl daemon-reload
 systemctl enable -q kyrie
 systemctl restart kyrie
+
+echo "> deploys"
+DEPLOY_UNIT=/etc/systemd/system/kyrie-deploy
+if [ "${AUTODEPLOY:-}" = 1 ]; then
+  ( umask 077; printf "DOMAIN='%s'\n" "$DOMAIN" > /etc/kyrie-deploy.conf )
+  cat > "$DEPLOY_UNIT.service" <<UNIT
+[Unit]
+Description=Kyrie: deploy main from GitHub when it moved (see $DIR/kyrie/autodeploy.sh)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash $DIR/kyrie/autodeploy.sh
+UNIT
+  cat > "$DEPLOY_UNIT.timer" <<UNIT
+[Unit]
+Description=Kyrie: check main on GitHub every 2 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=2min
+RandomizedDelaySec=15s
+
+[Install]
+WantedBy=timers.target
+UNIT
+  systemctl daemon-reload
+  systemctl enable -q --now kyrie-deploy.timer
+  echo "  automatic: main on GitHub is checked every 2 minutes"
+elif [ "${AUTODEPLOY:-}" = 0 ]; then
+  systemctl disable -q --now kyrie-deploy.timer 2>/dev/null || true
+  rm -f "$DEPLOY_UNIT.service" "$DEPLOY_UNIT.timer" /etc/kyrie-deploy.conf
+  systemctl daemon-reload
+  echo "  automatic deploys off"
+elif systemctl is-enabled --quiet kyrie-deploy.timer 2>/dev/null; then
+  echo "  automatic: on"
+else
+  echo "  automatic: off (AUTODEPLOY=1 turns it on)"
+fi
 
 echo "> caddy"
 current="$(grep -A1 -F "$MARK" "$CADDYFILE" | tail -n +2 | sed 's/ *{$//' || true)"
@@ -136,4 +185,4 @@ door="$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Sec-Fetch-Site: same-
 menu="$(curl -s -H 'Cookie: kyrie631=1' "http://127.0.0.1:$PORT/" | grep -c 'data-page="menu"' || true)"
 if [ "$door" = "204" ] && [ "$menu" = "1" ]; then echo "  631 door: works"; else echo "  WARNING: the 631 door did not open (POST /631 gave $door)" >&2; fi
 [ -n "$(getvar ANTHROPIC_API_KEY "$ENVF")" ] && echo "  Claude cards: on" || echo "  Claude cards: off (no ANTHROPIC_API_KEY yet)"
-echo "> done: https://${DOMAIN%%,*}"
+echo "> done: https://${DOMAIN%%,*} (${REV})"

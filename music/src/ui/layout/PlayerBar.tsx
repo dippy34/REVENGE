@@ -6,7 +6,7 @@ import { Artwork } from '../components/Artwork';
 import { Icon } from '../icons';
 import { openMenu } from '../overlays';
 import { nowPlayingOpen, panel, togglePanel } from '../state';
-import { PlayButton, ProgressBar, statusText, TransportControls, VolumeControl } from './PlayerControls';
+import { isBusy, PlayButton, ProgressBar, statusText, TransportControls, VolumeControl } from './PlayerControls';
 
 function NowInfo() {
   const p = svc().player;
@@ -67,7 +67,7 @@ export function PlayerBar() {
       </div>
       <div class="m-right">
         <button type="button" class={`ib m-pt${tab === 'nowplaying' ? ' is-on' : ''}`} aria-label="Now playing panel" aria-pressed={tab === 'nowplaying'} title="now playing" onClick={() => togglePanel('nowplaying')}>
-          <Icon name="video" size={17} />
+          <Icon name="disc" size={17} />
         </button>
         <button type="button" class={`ib m-pt${tab === 'queue' ? ' is-on' : ''}`} aria-label="Queue" aria-pressed={tab === 'queue'} title="queue (q)" onClick={() => togglePanel('queue')}>
           <Icon name="queue" size={17} />
@@ -91,7 +91,7 @@ export function MiniPlayer() {
   const pct = st.duration ? Math.min(100, (st.position / st.duration) * 100) : 0;
   return (
     <div
-      class="m-mini"
+      class={`m-mini${isBusy() ? ' is-busy' : ''}`}
       onPointerDown={(e) => (start.current = { x: e.clientX, y: e.clientY, t: Date.now() })}
       onPointerUp={(e) => {
         const s = start.current;

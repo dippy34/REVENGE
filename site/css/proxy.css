@@ -281,6 +281,16 @@ html.browsing body {
 .browsing .p-view { flex: 1; min-height: 0; }
 .browsing .fx { display: none; }
 
+/* media/ (movies): until it shows, the site loads (and reloads) unseen behind the
+   loading screen, at full size so it lays out as it will be seen */
+html[data-site]:not(.browsing) .p-frame {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---------- start screen ---------- */
 
 .p-start {

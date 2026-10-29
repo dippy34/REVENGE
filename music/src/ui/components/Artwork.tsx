@@ -13,9 +13,15 @@ interface Props {
 /**
  * Cover art. Covers keep their colour, like the YouTube section's thumbnails;
  * the interface around them stays black and white. Without a cover: a dark
- * square with a hex digest of the id, in the site's style.
+ * square with a hex digest of the id, in the site's style. Keyed by the id,
+ * so a player moving on to the next song drops the old cover at once instead
+ * of showing it (or skipping its failed candidates) until the new one loads.
  */
-export function Artwork({ art, size = 'medium', alt = '', seed, class: cls, eager }: Props) {
+export function Artwork(props: Props) {
+  return <Cover key={props.seed} {...props} />;
+}
+
+function Cover({ art, size = 'medium', alt = '', seed, class: cls, eager }: Props) {
   const candidates = [size === 'large' ? art?.large : undefined, size !== 'small' ? art?.medium : undefined, art?.small, art?.medium, art?.large].filter(
     (u, i, all): u is string => !!u && all.indexOf(u) === i,
   );

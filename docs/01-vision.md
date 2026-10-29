@@ -21,7 +21,7 @@ People who get the link by word of mouth. No marketing, no search presence, no a
 - Anything built here must follow the same no-logging rules. The only tracking is the site's own anonymous visit counter (added 2026-10-19, see `05-decisions.md`).
 
 ### 3. Other: Music (experimental, reworked 2026-10-29)
-- The menu's `other` entry opens a second list; for now it holds `music`.
+- The menu's `other` entry opens a second list: `music` and `movies` (movy.sx through the proxy, with no browser around it).
 - A bare-bones music player: search, artist and album pages, a queue, and playlists saved in the browser.
 - The server does the work: it searches, builds every page and decides how each song plays (Audius full tracks, then YouTube's no-cookie player, then a 30-second Deezer preview). The browser only draws and plays. Details in `05-decisions.md`.
 

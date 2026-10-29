@@ -104,18 +104,17 @@ test('rapid skipping ends on the right track with no stale audio', async ({ page
   expect(st.audioSrc).toContain(`/api/music/audio/audius/${st.trackId!.slice(3)}`);
 });
 
-test('plays a mainstream song through the visible YouTube player', async ({ page }) => {
+test('plays a mainstream song through YouTube with the video out of sight', async ({ page }) => {
   await page.goto('./?debug#/search?q=blinding%20lights%20the%20weeknd&type=tracks');
   const row = page.locator(SONG_ROW, { hasText: 'The Weeknd' }).first();
   await expect(row).toBeVisible();
   await row.dblclick();
   await expect.poll(async () => (await player(page)).provider, { timeout: 30_000 }).toBe('youtube');
   await waitPlaying(page);
-  const box = await page.locator('.m-embed').boundingBox();
-  expect(box!.width).toBeGreaterThanOrEqual(200);
-  expect(box!.height).toBeGreaterThanOrEqual(200);
-  const frame = await page.locator('.m-embed iframe').boundingBox();
-  expect(frame!.height).toBeGreaterThanOrEqual(box!.height - 1); // fills its box
+  const embed = page.locator('.m-embed');
+  await expect(embed).toHaveClass(/is-away/);
+  await expect(embed).toHaveCSS('opacity', '0');
+  await expect(page.locator('.m-dock')).toHaveCount(0);
   await expect(page.locator('.m-embed iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
 });
 
