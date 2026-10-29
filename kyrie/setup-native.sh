@@ -11,7 +11,8 @@
 # Run as root, after server/setup-native.sh has run once:
 #   DOMAIN='kyriestudy.com, www.kyriestudy.com' ANTHROPIC_API_KEY=... bash kyrie/setup-native.sh
 # CHAT_OWNER_PASSWORD=... (once) sets the password of the chat's owner account,
-# 631; it is saved in /etc/kyrie.env like the key.
+# 631; it is saved in /etc/kyrie.env like the key. Run by hand without one, it
+# asks (ASKPASSWORD=1 asks again, to change it).
 # AUTODEPLOY=1 (once) makes the box deploy itself: kyrie-deploy.timer checks
 # main on GitHub every 2 minutes and runs kyrie/autodeploy.sh when it moved
 # (going back to the last good commit if Kyrie does not come up). AUTODEPLOY=0
@@ -64,8 +65,16 @@ if [ -n "${ANTHROPIC_API_KEY:-}" ]; then setvar ANTHROPIC_API_KEY "$ANTHROPIC_AP
 elif [ -z "$(getvar ANTHROPIC_API_KEY "$ENVF")" ] && [ -n "$(getvar ANTHROPIC_API_KEY "$SITEENV")" ]; then
   setvar ANTHROPIC_API_KEY "$(getvar ANTHROPIC_API_KEY "$SITEENV")"
 fi
-# the chat's owner password: passed in (replaces the saved one), else kept
-if [ -n "${CHAT_OWNER_PASSWORD:-}" ]; then setvar CHAT_OWNER_PASSWORD "$CHAT_OWNER_PASSWORD"; fi
+# the chat's owner password: passed in (replaces the saved one), else kept.
+# Run by hand with none saved yet (or with ASKPASSWORD=1), it asks for one:
+# web consoles can drop the shift in CHAT_OWNER_PASSWORD's underscores.
+# What you type shows on screen, so a mangled character is easy to spot.
+if [ -n "${CHAT_OWNER_PASSWORD:-}" ]; then setvar CHAT_OWNER_PASSWORD "$CHAT_OWNER_PASSWORD"
+elif [ -t 0 ] && { [ "${ASKPASSWORD:-}" = 1 ] || [ -z "$(getvar CHAT_OWNER_PASSWORD "$ENVF")" ]; }; then
+  read -rp "  password for the chat's owner account (631), or enter to skip: " pw
+  if [ -n "$pw" ]; then setvar CHAT_OWNER_PASSWORD "$pw"; echo "  saved"; fi
+fi
+[ -n "$(getvar CHAT_OWNER_PASSWORD "$ENVF")" ] && echo "  chat owner sign-in: on" || echo "  chat owner sign-in: off (no password yet)"
 # the proxy lock and the stats page follow the 631 site's settings on every run
 # (only these two: its hunt secrets stay with it, so the hunt is off on Kyrie)
 setvar ACCESS_KEY "$(getvar ACCESS_KEY "$SITEENV")"
