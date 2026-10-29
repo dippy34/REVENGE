@@ -366,6 +366,42 @@ html.leaving .cur { opacity: 0 !important; }
 .item.is-go::before { transform: scaleX(1); animation: go-blink .3s steps(2) 2; }
 @keyframes go-blink { 50% { opacity: 0; } }
 
+/* ---------- other: the menu swaps in place (menu.js) ---------- */
+
+/* out: the white bar strikes each row, then the row is torn off to the
+   left, one after another (--o is the row's order, set by menu.js) */
+.menu.is-leaving li { animation: row-out .4s var(--ease-snap) calc(var(--o, 0) * 55ms) both; }
+.menu.is-leaving .item::before { transform: scaleX(1); transition-duration: .16s; transition-delay: calc(var(--o, 0) * 55ms); }
+.menu.is-leaving .item-end { transform: rotate(135deg) scale(.6); transition-delay: calc(var(--o, 0) * 55ms); }
+@keyframes row-out {
+  0%   { opacity: 1; transform: none; clip-path: inset(0); }
+  40%  { opacity: 1; transform: translateX(5px); clip-path: inset(0); filter: brightness(1.8); }
+  100% { opacity: 0; transform: translateX(-34px) skewX(-10deg); clip-path: inset(0 100% 0 0); filter: blur(3px); }
+}
+
+/* in: the rule draws, rows rise and print out of a white bar (--d per row) */
+.menu.is-entering { animation: line-in .6s var(--ease-snap) backwards; }
+.menu.is-entering li { animation: rise .5s var(--ease-out) var(--d, 0s) backwards; }
+.menu.is-entering .item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--hi);
+  transform: scaleX(0);
+  transform-origin: 100% 50%;
+  animation: print .46s var(--ease-snap) var(--d, 0s) backwards;
+  pointer-events: none;
+}
+.menu.is-entering .menu-path { animation: path-type .5s steps(8) var(--d, 0s) backwards; }
+@keyframes path-type { from { clip-path: inset(0 100% 0 0); } }
+
+/* the caret after ~/other blinks; the experimental tag's hatch crawls */
+html.js .menu-path span::after { animation: caret 1.05s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+html.js .item-tag { animation: hatch-crawl 1.2s linear infinite; }
+@keyframes hatch-crawl { to { background-position: 8px 0; } }
+
 /* ---------- mark and clock ---------- */
 
 /* the hex outline draws itself, then the eyes blink now and then */
@@ -409,11 +445,13 @@ html.js:not(.boot) .menu .item::after {
 .menu li:nth-child(1) { --d: .36s; }
 .menu li:nth-child(2) { --d: .46s; }
 .menu li:nth-child(3) { --d: .56s; }
+.menu li:nth-child(4) { --d: .66s; }
 html.fx-in .top { animation-delay: .3s; }
 html.fx-in .title { animation-delay: .34s; }
 html.fx-in .menu li:nth-child(1) { --d: .5s; }
 html.fx-in .menu li:nth-child(2) { --d: .58s; }
 html.fx-in .menu li:nth-child(3) { --d: .66s; }
+html.fx-in .menu li:nth-child(4) { --d: .74s; }
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(10px); filter: blur(4px); }

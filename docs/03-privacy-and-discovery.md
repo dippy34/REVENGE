@@ -12,6 +12,12 @@ Honest framing: "no trace whatsoever" is not achievable. Hosts, registrars, and 
   - this origin (`/api/tube-*`): search, channel tabs and details. The server calls YouTube. Search phrases leave this machine; visitor IPs do not go to a third-party search host.
   - `i.ytimg.com`: thumbnails while browsing. YouTube sees visitor IPs.
   - `www.youtube-nocookie.com`: the player, loaded when a video is opened.
+- The music player (reworked 2026-10-29) has the same two YouTube exceptions and nothing else:
+  - this origin (`/api/music/*`, `server/music.mjs`): search, every page, how each song plays, **cover art and audio**. The server calls Deezer, Audius and YouTube's search (the same one as the YouTube section); visitor IPs never reach them.
+  - `i.ytimg.com` and `www.youtube-nocookie.com`: the player once a song plays through YouTube. YouTube sees visitor IPs, as in the YouTube section.
+  - Rate limits use a keyed hash of the IP, held in memory only. Nothing is logged; catalog answers and video matches are kept in memory for minutes to a day.
+  - Playlists, the queue and the volume live only in the browser's localStorage.
+  - The visit counter sees only the page (`/music/`), never searches, songs or artists.
 - Headers: strict CSP, `Referrer-Policy: no-referrer`, `Permissions-Policy` disabling sensors, HSTS.
 
 ## Discovery (find it only by URL or word of mouth)

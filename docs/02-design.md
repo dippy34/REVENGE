@@ -29,6 +29,7 @@ The whole site reads as one monochrome CRT / terminal HUD: square corners, corne
 - **Transitions:** CRT power-off when leaving a page, power-on when the next one opens. Inside the YouTube app, views dim out and rise in.
 - **Boot:** power-on line, hex dump, progress bars, then the digest decodes and flies into the menu title. First visit only, skippable.
 - **YouTube:** gray glass top bar (thumbnails turn gray under it), generated identicon avatars, grayscale blurred ambient glow behind the player and Shorts, skeleton loaders, a terminal build log, library stat tiles and an ASCII chart of topic weights.
+- **Music (cut down 2026-10-29):** the YouTube section's language for a music player. Gray glass top bar (`~/m/route_`), terminal tags on songs (`full`, `video`, `30s`), corner brackets that lock onto a cover on hover, a `+` on every song to add it to a playlist, `[now] [queue]` panel tabs and ASCII-mask empty states. Covers and the video keep their colour; artists get generated hex identicons instead of photos. Dialogs open above the docked YouTube player, never over it.
 - **Games, proxy, stats:** the same language (numbered HUD tiles, a terminal search and address bar, a terminal key prompt on stats).
 - **404:** `site/404.html`, served by the server for any missing path and by static hosts.
 
@@ -39,7 +40,9 @@ The whole site reads as one monochrome CRT / terminal HUD: square corners, corne
 - Copy is terse and neutral. No usernames, no "welcome back".
 
 ## Menu
-Three entries: `YouTube`, `Games`, `Proxy`. All three are live (Proxy needs the server in `server/`). Keyboard navigable.
+Four entries: `YouTube`, `Games`, `Proxy`, `Other`. Proxy and Music need the server in `server/`.
+- `Other` (a `+` that turns on hover) swaps the list in place for a second one, `~/other`: the rows scramble, the white bar strikes each one and it tears off to the left, the rain bursts and the title glitches, then the new rows print in. For now it holds `music` (tagged `experimental` with a crawling hatch) and `back`. Browser back closes it; `/#other` opens it.
+- Keys: arrows or j/k, 1-n, → or l on `other` opens it, Esc / ← / h / Backspace goes back. Without JS, `#other` swaps the lists with CSS alone.
 
 ## Quality bar
 - Fast: no framework, small payload, no external fonts.

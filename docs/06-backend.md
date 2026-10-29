@@ -205,6 +205,33 @@ The YouTube feed used to call `nova-hub.dev`. It now stays on this origin:
 No YouTube Data API key. Queries are not written down. GitHub Pages has no server,
 so the feed only works here.
 
+## Music backend (`/api/music/*`)
+
+`server/music.mjs` does the music player's work (`site/music/`, source in `music/`).
+The browser asks for whole pages and for how a song plays; the server calls the
+catalogs, shapes every answer into plain text and our own URLs, and streams covers
+and audio through itself. Every route is GET or HEAD, same-origin only.
+
+| Route | Calls | Answers |
+|---|---|---|
+| `home` | Deezer charts, Audius trending | `{ tracks, albums, full }` |
+| `search?q=` | Deezer (songs, albums, artists), Audius (songs) | `{ tracks, albums, artists }` |
+| `album/dz:{id}` | Deezer | the album with every track |
+| `artist/dz:{id}`, `artist/au:{id}` | Deezer or Audius | `{ artist, topTracks, albums }` |
+| `play/dz:{id}`, `play/au:{id}` | Deezer, YouTube search (`tube.mjs`) | `{ sources }`, best first: Audius audio, YouTube videos, the Deezer preview |
+| `img?u=` | Deezer's image CDN | images only, 8 MB cap |
+| `img/audius/track/{id}/{size}` | Audius content nodes | |
+| `audio/audius/{id}`, `audio/deezer/{id}` | that catalog's media host | range requests pass through, so seeking works; Deezer previews are looked up fresh on each play |
+
+- **Not a general proxy:** every catalog URL is built on the server from checked ids and a capped query. Media follows redirects only to the hosts allowed for that route (Audius: any public https host, audio or images only); every connection's address is checked at connect time and private, loopback and link-local addresses are refused. Content types are checked; JSON is capped at 2 MB and images at 8 MB.
+- **Limits:** 300 page calls and 900 media requests per visitor per minute, told apart by a keyed hash of the IP held in memory. Over the limit returns 429 with `Retry-After`.
+- **Cache:** catalog answers stay in memory (at most 600 answers or 32 MB) for 5 minutes to an hour; a song's YouTube match for a day. Identical calls in flight share one request. Nothing is written to disk or logged.
+- **Settings:** `MUSIC_DISABLE_YOUTUBE=1` (in `/etc/revenge.env` on the box or `server/.env` locally) plays songs from Audius and previews only. No keys are needed.
+- **Bandwidth:** Audius audio and covers pass through the server, so a full song costs about its size twice (in and out), roughly 3 to 10 MB; a preview is under 1 MB. YouTube plays straight from YouTube.
+- **Building:** `cd music && npm ci && npm run build` writes `site/music/`. Commit the build; the server and Pages serve `site/` as it is.
+- **Tests:** `server/music.test.mjs` (run by `npm run check`), `music/` unit tests (`npm test`) and browser smoke tests against the real server (`npm run test:e2e`).
+- **GitHub Pages** has no backend: the section opens but cannot search or play.
+
 ## Visit counter (`/stats/`)
 
 `site/js/hit.js` (on every page except `/stats/`) sends one small message per page to

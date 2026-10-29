@@ -1,7 +1,7 @@
 # 05 - Decisions, Open Questions, Limits
 
 ## Decided
-- Sections: YouTube, Games and Proxy, all live as of 2026-10-19 (see below).
+- Sections: YouTube, Games and Proxy, all live as of 2026-10-19, and Music (experimental, under Other) since 2026-10-28 (see below).
 - Build the menu and YouTube first.
 - Black and white theme only.
 - Internal name is "Revenge"; the public-facing title is encoded or hinted, never plain.
@@ -179,3 +179,19 @@
 - **New storage keys:**
   - `localStorage`: `fx.tier` (the measured level), `fx.tier.force` (a forced level), `eggs` (found eggs), `eggs.snake` (snake high score)
   - `sessionStorage`: `fx.tint`
+
+### Music (2026-10-28, cut down 2026-10-29)
+- **What:** a bare-bones music player at `/music/` (tab title `~/m`), opened from the menu's `other` entry and tagged experimental. Source in `music/` (Preact, TypeScript, Vite), built into `site/music/`.
+- **The server does the work** (`server/music.mjs`, routes in `06-backend.md`): it searches, builds the home, search, album and artist pages, and decides how each song plays. The browser only draws pages, plays what it is told, and keeps playlists.
+- **How a song plays, best first:**
+  1. Audius: the full track, for songs that come from Audius
+  2. YouTube's no-cookie player: the full song. The server finds the video with the YouTube section's own search and prefers the artist's channel, "Topic" audio uploads and a matching length; live takes, covers, remixes and the like are ranked down.
+  3. Deezer: a licensed 30-second preview
+- **Labels:** songs show `full`, `video` or `30s` once known, and the player names the source.
+- **Kept from the first version:** the look, the player (queue, shuffle, repeat, media keys), the YouTube dock, phone layout.
+- **Dropped:** likes, history, lyrics, your own files, settings, genres and moods, recommendations, playlist import/export, the offline service worker, and catalogs other than Deezer and Audius (MusicBrainz, Internet Archive, Wikimedia, Wikidata, Wikipedia, iTunes, Jamendo, Discogs). The first version is backed up outside the repo (the owner's Trash, `revenge-old-music-backup-2026-10-29`).
+- **Not used:** Monochrome's TIDAL sources. They stream paid catalogs through shared app credentials and unofficial proxies, which is the "get around DRM or scrape protected audio" this site will not do.
+- **Will not do:** download or save streams, strip YouTube's ads, or hide, shrink or cover the YouTube player (it stays on screen at 200×200 or larger; dialogs open above the dock).
+- **Storage:** `localStorage` only: `m.playlists` (each playlist keeps a copy of its songs), `m.queue`, `m.settings` (volume, mute), `m.panel`. If the browser refuses to save, playlists still work until the tab closes and the page says so.
+- **GitHub Pages:** there is no backend there, so the section opens but cannot search or play.
+- **Shared site code touched:** `site/index.html` (the `other` entry and `~/other` list), `site/js/menu.js` (the swap and its keys), `site/css/base.css` and `fx.css` (its layout and effects, and a delay for the fourth menu row), and `.m-logo` in the long-press ghost door in `site/js/eggs.js`.

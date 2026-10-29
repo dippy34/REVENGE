@@ -135,6 +135,45 @@
   Cross-Origin-Embedder-Policy: credentialless
 
 
+# music/ is built from music/ (Vite) into site/music/. Pages, covers and
+# audio come from this origin (/api/music/*: server/music.mjs searches the
+# catalogs and decides how each song plays); the only third parties are the
+# same two as youtube/: i.ytimg.com thumbnails and the www.youtube-nocookie.com
+# player. Hashed assets never change.
+/music/
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
+  Permissions-Policy: accelerometer=(), autoplay=(self "https://www.youtube-nocookie.com"), browsing-topics=(), camera=(), clipboard-read=(), clipboard-write=(), display-capture=(), encrypted-media=(self "https://www.youtube-nocookie.com"), fullscreen=(self "https://www.youtube-nocookie.com"), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(self "https://www.youtube-nocookie.com"), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()
+  Cache-Control: no-cache
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/music/index.html
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'; frame-ancestors 'self'
+  Permissions-Policy: accelerometer=(), autoplay=(self "https://www.youtube-nocookie.com"), browsing-topics=(), camera=(), clipboard-read=(), clipboard-write=(), display-capture=(), encrypted-media=(self "https://www.youtube-nocookie.com"), fullscreen=(self "https://www.youtube-nocookie.com"), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(self "https://www.youtube-nocookie.com"), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()
+  Cache-Control: no-cache
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/music/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+  Referrer-Policy: no-referrer
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
 # proxy/ runs only on server/ (it needs the service worker, Scramjet files
 # and the Wisp socket that server.mjs provides). Proxied pages are served by
 # the service worker under /proxy/~/ and carry their own headers, not these.

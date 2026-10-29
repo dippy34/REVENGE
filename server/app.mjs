@@ -14,6 +14,7 @@
 //   /api/p         POST: one page view or game play (see stats.mjs)
 //   /api/stats     GET: the counts, with the STATS_KEY
 //   /api/tube-*    YouTube search / channel / details (see tube.mjs)
+//   /api/music/*   the music player: pages, how each song plays, cover art and audio (see music.mjs)
 //   /api/ai        POST: the ghost's chat stream; /api/ai/status (see ai.mjs)
 //   /api/hunt/*    the weekly signal (see hunt.mjs and docs/07-hunt.md); off without HUNT_ secrets
 //
@@ -33,6 +34,7 @@
 //   STATS_DIR    where the daily counts are saved (default ./.data)
 //   STATS_TZ     time zone that decides where a day starts (default America/Chicago)
 //   ANTHROPIC_API_KEY  wakes the ghost (/ghost/); without it /api/ai answers 503
+//   MUSIC_DISABLE_YOUTUBE=1  music plays from Audius and previews only (see music.mjs)
 //   AI_MODEL     model id (default claude-haiku-5-5)
 //   AI_DAILY_MAX requests per day for everyone together (default 300)
 //   AI_MOCK=1    canned replies, no key and no network (development)
@@ -51,6 +53,7 @@ import { createStats } from './stats.mjs';
 import { createRh, isRhRequest } from './rhproxy.mjs';
 import { createAi } from './ai.mjs';
 import { createHunt } from './hunt.mjs';
+import { createMusic } from './music.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -88,6 +91,7 @@ export function createApp({ env = process.env, host = '127.0.0.1', rename = null
     headersFor: (p) => headersFor(rules, p)
   });
   const tube = createTube();
+  const music = createMusic({ env });
   const hunt = createHunt({ siteDir: SITE, env, host }); // throws when it cannot start
   const ai = createAi({
     apiKey: env.ANTHROPIC_API_KEY || '',
@@ -245,6 +249,7 @@ addEventListener("fetch", (e) => {
     if (urlPath === '/api/stats') return stats.report(req, res);
     if (urlPath === '/api/tube-search') return tube.handleSearch(req, res);
     if (urlPath === '/api/tube-video') return tube.handleVideo(req, res);
+    if (urlPath.startsWith('/api/music/')) return music.handle(req, res);
     if (urlPath === '/api/ai/status') return ai.status(req, res);
 
     if (urlPath === '/proxy/sw.js') {

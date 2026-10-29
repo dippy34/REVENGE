@@ -105,6 +105,11 @@
 - [x] No logging; private/loopback addresses blocked; web ports only; optional access key.
 - [x] Live on the Hetzner server at `https://631cb8a9.com` (2026-10-19; also `www.` and an sslip.io backup). Real sites tested through it: example.com, Wikipedia, a DuckDuckGo search.
 
+## Music (built 2026-10-28, cut down 2026-10-29)
+- Under the menu's `other` entry, tagged experimental. `music/` (Preact, TypeScript, Vite) built into `site/music/`; the backend is `server/music.mjs`.
+- Done means: search and play on desktop and phone, the YouTube player always visible, no third-party requests beyond YouTube's player and thumbnails, unit and browser tests green.
+- Not done: deploying the build to the live server.
+
 ## Phase 6 - Deploy
 - Edge/static host, random hostname, wildcard cert, logs off.
 - Confirm the host honours `_headers` (Netlify / Cloudflare Pages format) or port the rules to its own config.

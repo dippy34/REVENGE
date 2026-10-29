@@ -280,6 +280,56 @@ a.home { padding: 9px; margin: -9px; }
 .item.is-locked:hover .item-end,
 .item.is-locked:focus-visible .item-end { color: var(--dim); transform: none; }
 
+/* ---------- other: a second menu that swaps in place ---------- */
+
+/* Without JS, following #other swaps the two lists; with JS, menu.js does
+   it and plays the exit and entrance in fx.css. */
+.menu-sub { display: none; }
+html:not(.js) nav:has(#other:target) .menu:not(.menu-sub) { display: none; }
+html:not(.js) .menu-sub:target,
+html.js .menu-sub.is-open { display: grid; }
+html.js .menu.is-gone { display: none; }
+
+/* "~/other_" sits above the list's top rule */
+.menu-sub li.menu-path {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  padding: 0 10px 9px;
+  border: 0;
+  font-size: 11px;
+  letter-spacing: .14em;
+  color: var(--dim);
+}
+.menu-path span::after { content: "_"; }
+
+/* "other" opens rather than leaves: a plus that turns on hover */
+.item.is-more:hover .item-end,
+.item.is-more:focus-visible .item-end { transform: rotate(90deg); }
+
+.item.is-back { font-size: clamp(15px, 1.7vw, 17px); color: var(--dim); }
+.item.is-back:hover .item-end,
+.item.is-back:focus-visible .item-end { transform: translateX(-3px); }
+
+/* a hazard-hatched tag after the word: [experimental] */
+.item-tag {
+  grid-column: 3;
+  justify-self: start;
+  margin-left: .9em;
+  padding: 2px 6px 1px;
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  border: 1px solid var(--line-3);
+  /* two thin stripes per 8px tile, so it tiles (and crawls) without seams */
+  background: linear-gradient(-45deg, rgba(255, 255, 255, .1) 0 9%, transparent 9% 50%, rgba(255, 255, 255, .1) 50% 59%, transparent 59%) 0 0 / 8px 8px;
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+.item:hover .item-tag,
+.item:focus-visible .item-tag { color: var(--hi); border-color: currentColor; }
+
 /* fingers: rows at least 44px tall */
 @media (pointer: coarse) {
   .item { padding-top: 11px; padding-bottom: 11px; }
