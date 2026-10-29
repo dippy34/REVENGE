@@ -181,7 +181,8 @@ test('the real Rammerhead process: proxies a page, strips headers, writes no log
   const site = http.createServer((req, res) => {
     seen = req.headers;
     res.writeHead(200, { 'content-type': 'text/html', 'x-frame-options': 'DENY' });
-    res.end('<!doctype html><html><head><title>t</title></head><body><h1>hello from the target</h1><a href="/next">next</a></body></html>');
+    res.end('<!doctype html><html><head><title>t</title></head><body><h1>hello from the target</h1><a href="/next">next</a>' +
+      '<img srcset="/cdn-cgi/image/q=78,width=94/a.png 1x, /cdn-cgi/image/q=78,width=188/a.png 2x"></body></html>');
   });
   t.after(() => new Promise((r) => site.close(r)));
   const sitePort = await listen(site);
@@ -244,6 +245,18 @@ test('the real Rammerhead process: proxies a page, strips headers, writes no log
   assert.equal(protoHasAll({ CSSStyleDeclaration: { prototype: { background: '' } } }), false, 'Chrome without CSSStyleProperties');
   assert.equal(protoHasAll({ CSS2Properties: F, CSSStyleDeclaration: { prototype: {} } }), true, 'Firefox');
   assert.equal(protoHasAll({ CSSStyleDeclaration: { prototype: {} } }), false, 'old Safari (properties on each element)');
+  // srcset URLs with commas in them (image resizers, data: URLs) stay whole, on the
+  // server's rewrite and in the served client (see srcsetFn in rammerhead.cjs)
+  assert.match(page.body, /srcset="[^"]*\/http:\/\/127\.0\.0\.1:\d+\/cdn-cgi\/image\/q=78,width=94\/a\.png 1x, [^"]*\/cdn-cgi\/image\/q=78,width=188\/a\.png 2x"/);
+  assert.doesNotMatch(hh.body, /\.split\(","\);[^}]*\.replace\(\/ \+\/g," "\)/, 'the comma-splitting srcset handler is gone');
+  const fixed = /function \w+\(\w+,\w+\)\{var _r=Array\.prototype\.slice\.call\(arguments,2\)[\s\S]*?return _o\.join\(", "\)\}/.exec(hh.body);
+  assert.ok(fixed, 'the spec srcset handler is in the served client');
+  const urlsSet = vm.runInNewContext(`(${fixed[0]})`);
+  const P = (u, tag) => `P(${u}${tag ? ':' + tag : ''})`;
+  assert.equal(urlsSet(P, 'https://i.example/cdn-cgi/image/q=78,w=94/a.png 1x, https://i.example/x,y.png 2x', 'img'),
+    'P(https://i.example/cdn-cgi/image/q=78,w=94/a.png:img) 1x, P(https://i.example/x,y.png:img) 2x');
+  assert.equal(urlsSet(P, 'a.png 1x,b.png 2x'), 'P(a.png) 1x, P(b.png) 2x');
+  assert.equal(urlsSet(P, 'a.png, data:image/png;base64,AA== 640w'), 'P(a.png), P(data:image/png;base64,AA==) 640w');
   // Rammerhead's own 'disabled' log level logs everything; make sure it stays silent
   assert.equal(output, 0, 'rammerhead must write nothing to stdout/stderr');
 });

@@ -121,6 +121,23 @@ systemctl daemon-reload
 systemctl enable -q kyrie
 systemctl restart kyrie
 
+echo "> safari engine"
+# Rammerhead (revenge-rh, set up by server/setup-native.sh) runs from this checkout
+# too. Restart it when its code or packages changed, not on every deploy: a restart
+# ends everyone's safari-mode sessions (the sites they are signed in to).
+RHSUM="$(cat "$DIR/server/rammerhead.cjs" "$DIR/server/package-lock.json" | sha256sum | cut -d' ' -f1)"
+RHSTATE=/var/lib/kyrie-deploy/rh.sum
+if ! systemctl cat revenge-rh >/dev/null 2>&1; then
+  echo "  not on this box"
+elif [ "$(cat "$RHSTATE" 2>/dev/null || true)" = "$RHSUM" ]; then
+  echo "  unchanged"
+else
+  systemctl restart revenge-rh
+  mkdir -p "$(dirname "$RHSTATE")"
+  echo "$RHSUM" > "$RHSTATE"
+  echo "  restarted: its code changed"
+fi
+
 echo "> deploys"
 DEPLOY_UNIT=/etc/systemd/system/kyrie-deploy
 if [ "${AUTODEPLOY:-}" = 1 ]; then

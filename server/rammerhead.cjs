@@ -75,6 +75,25 @@ const config = {
 };
 require.cache[cfgFile] = { id: cfgFile, filename: cfgFile, loaded: true, children: [], paths: [], exports: config };
 
+// srcset, read the way the HTML spec reads it. hammerhead splits a srcset on every
+// comma, which cuts URLs that contain one: image-resizer URLs (Poki's game pictures are
+// img.poki-cdn.com/cdn-cgi/image/q=78,width=94,.../x.png) and data: URLs. The pieces are
+// proxied one by one and glued back into an address no server knows, so every picture
+// on such sites breaks in safari mode (Chrome's engine, Scramjet, gets this right). The
+// spec: a URL runs to the next whitespace, and a comma right after it, or after its
+// descriptors, ends that candidate. Written as ES5 because it also replaces the function
+// in the client script browsers get; the server's copy is swapped below, before
+// Rammerhead loads (processing/resources calls it through the module's exports).
+function srcsetFn(name, h, u) {
+  return `function ${name}(${h},${u}){var _r=Array.prototype.slice.call(arguments,2),_o=[],_s=String(${u}),_i=0,_n=_s.length,_j,_k,_w,_d;` +
+    'while(_i<_n){while(_i<_n&&/[\\s,]/.test(_s.charAt(_i)))_i++;if(_i>=_n)break;_j=_i;while(_j<_n&&!/\\s/.test(_s.charAt(_j)))_j++;' +
+    '_w=_s.slice(_i,_j);_d="";if(/,$/.test(_w)){_w=_w.replace(/,+$/,"");_i=_j}' +
+    'else{_k=_j;while(_k<_n&&_s.charAt(_k)!==",")_k++;_d=_s.slice(_j,_k).trim();_i=_k+1}' +
+    `if(_w)_o.push(${h}.apply(void 0,[_w].concat(_r))+(_d?" "+_d:""))}return _o.join(", ")}`;
+}
+const hhUrl = require(require.resolve('testcafe-hammerhead/lib/utils/url.js', { paths: [RH] }));
+hhUrl.handleUrlsSet = new Function(`return ${srcsetFn('handleUrlsSet', 'handler', 'url')}`)(); // eslint-disable-line no-new-func
+
 const exitHook = require('async-exit-hook');
 // see the note at the top: 'disabled' does not disable anything in this version
 require(path.join(RH, 'classes', 'RammerheadLogging.js')).prototype.callLogger = function () {};
@@ -126,6 +145,11 @@ if (CSS2_FEATURE.test(clientSrc) && clientSrc.split(CSS2_PROTO).length === 3) {
   clientSrc = clientSrc
     .replace(CSS2_FEATURE, '$1.css2PropertiesProtoContainsAllProps=!!(window.CSS2Properties||window.CSSStyleProperties&&!Object.prototype.hasOwnProperty.call(window.CSSStyleDeclaration.prototype,"background"))')
     .split(CSS2_PROTO).join('(this.window.CSS2Properties||this.window.CSSStyleProperties).prototype');
+}
+// the client's srcset splitter (see srcsetFn above); minified, so found by its shape
+const SRCSET_SPLIT = /function (\w+)\((\w+),(\w+)\)\{for\(var (\w+)=\[\],(\w+)=2;\5<arguments\.length;\5\+\+\)\4\[\5-2\]=arguments\[\5\];for\(var \w+=\[\],\w+=0,\w+=\3\.split\(","\);[\s\S]*?return \w+\.join\(","\)\}/g;
+if ((clientSrc.match(SRCSET_SPLIT) || []).length === 1) {
+  clientSrc = clientSrc.replace(SRCSET_SPLIT, (m, fn, h, u) => srcsetFn(fn, h, u));
 }
 if (clientSrc !== original) {
   client.handler.content = Buffer.from(clientSrc);
