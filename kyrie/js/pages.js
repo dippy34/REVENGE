@@ -5,6 +5,7 @@
     flash: ['cards', 'Flashcards'],
     learn: ['learn', 'Learn'],
     test: ['test', 'Practice test'],
+    sprint: ['clock', 'Sprint'],
     match: ['grid', 'Match'],
     comet: ['rocket', 'Comet Run'],
     blitz: ['zap', 'Lightning'],
@@ -75,11 +76,11 @@
         actions: `<a class="btn btn-primary" href="#/new">${R.icon('plus', 16)} New deck</a>`,
       })}
       <div class="kpis">
-        <div class="kpi"><div class="kpi-l">${R.icon('target', 14)} Today's goal</div><div class="kpi-n">${today}<span class="kpi-of"> / ${goal}</span></div>
+        <div class="kpi" data-tilt="8"><div class="kpi-l">${R.icon('target', 14)} Today's goal</div><div class="kpi-n">${today}<span class="kpi-of"> / ${goal}</span></div>
           <div class="bar"><i class="m" style="width:${Math.min(100, (today / goal) * 100)}%"></i></div></div>
-        <div class="kpi"><div class="kpi-l">${R.icon('flame', 14)} Day streak</div><div class="kpi-n">${R.store.streak()}</div></div>
-        <div class="kpi"><div class="kpi-l">${R.icon('clock', 14)} Due now</div><div class="kpi-n">${tot.due}</div></div>
-        <div class="kpi"><div class="kpi-l">${R.icon('trophy', 14)} Mastered</div><div class="kpi-n">${tot.mastered}<span class="kpi-of"> / ${tot.cards}</span></div></div>
+        <div class="kpi" data-tilt="8"><div class="kpi-l">${R.icon('flame', 14)} Day streak</div><div class="kpi-n">${R.store.streak()}</div></div>
+        <div class="kpi" data-tilt="8"><div class="kpi-l">${R.icon('clock', 14)} Due now</div><div class="kpi-n">${tot.due}</div></div>
+        <div class="kpi" data-tilt="8"><div class="kpi-l">${R.icon('trophy', 14)} Mastered</div><div class="kpi-n">${tot.mastered}<span class="kpi-of"> / ${tot.cards}</span></div></div>
       </div>
       <div class="two-col">
         <div class="stack">
@@ -143,12 +144,14 @@
     ];
     root.innerHTML = `
       <div class="first">
+        ${R.deck3d(['Term', 'Your first card'])}
         <h1 class="first-title">Make your first deck.</h1>
         <p class="first-sub">Add notes, slides or a study guide. Kyrie writes the flashcards, quizzes and tests.</p>
         ${R.dropzone(true)}
         <div class="first-alt"><a href="#/new">Paste your notes instead</a><span class="sep"></span><button class="link-btn" data-tour>Take the tour</button></div>
         <div class="first-formats">${formats.map(([i, t]) => `<span>${R.icon(i, 16)}${t}</span>`).join('')}</div>
       </div>`;
+    R.$('[data-drop]', root).dataset.tilt = '3';
     R.bindDrop(R.$('[data-drop]', root), (files) => {
       R.pending = { files };
       location.hash = '#/new';
@@ -191,7 +194,7 @@
         </div>
       </div>
       <div data-out></div>`
-          : `<div class="empty panel"><div class="empty-ic">${R.icon('library', 26)}</div><h2>No decks yet</h2><p class="muted">Upload notes, slides or a study guide and Kyrie will make your first deck.</p><a class="btn btn-primary" href="#/new">${R.icon('plus', 16)} New deck</a></div>`
+          : `<div class="empty panel">${R.deck3d(['Term', 'Your first card'])}<h2>No decks yet</h2><p class="muted">Upload notes, slides or a study guide and Kyrie will make your first deck.</p><a class="btn btn-primary" href="#/new">${R.icon('plus', 16)} New deck</a></div>`
       }`;
     if (!decks.length) return;
 
@@ -215,7 +218,7 @@
       if (st.view === 'grid') {
         out.innerHTML = `<div class="deck-grid">${list
           .map(
-            ({ d, s }) => `<a class="deck-card" href="#/deck/${d.id}">
+            ({ d, s }) => `<a class="deck-card" data-tilt="7" href="#/deck/${d.id}">
             <div class="deck-card-top">${d.subject ? `<span class="chip">${R.esc(d.subject)}</span>` : '<span></span>'}${s.due ? `<span class="chip chip-due">${s.due} due</span>` : ''}</div>
             <h3>${R.esc(d.title)}</h3>
             <div class="deck-meta">${R.plural(s.total, 'card')} · studied ${R.timeAgo(d.opened || d.updated)}</div>
@@ -278,6 +281,7 @@
     for (const d of decks) {
       for (const [key, label, fmt, low] of [
         ['test', 'Practice test', (v) => `${v}%`],
+        ['sprint', 'Sprint', (v) => `${v.toLocaleString()} pts`],
         ['match', 'Match', (v) => R.fmtTime(v), true],
         ['comet', 'Comet Run', (v) => v.toLocaleString()],
         ['blitz', 'Lightning', (v) => `${v} pts`],

@@ -497,6 +497,7 @@
     { id: 'flash', icon: 'cards', title: 'Flashcards', desc: 'Flip cards and rate yourself. Reviews are scheduled for you.' },
     { id: 'learn', icon: 'learn', title: 'Learn', desc: 'Multiple choice first, then typed answers, until it sticks.' },
     { id: 'test', icon: 'test', title: 'Practice test', desc: 'A graded test with mixed question types.' },
+    { id: 'sprint', icon: 'clock', title: 'Sprint', desc: 'Type answers against the clock. Streaks add time.', game: true },
     { id: 'match', icon: 'grid', title: 'Match', desc: 'Pair every term with its answer against the clock.', game: true },
     { id: 'comet', icon: 'rocket', title: 'Comet Run', desc: 'Dodge comets. Crash and you have to answer a question.', game: true },
     { id: 'blitz', icon: 'zap', title: 'Lightning', desc: '60 seconds of true or false. Keep your streak alive.', game: true },
@@ -556,7 +557,7 @@
         <h3 class="group-title">Study</h3>
         <div class="mode-grid">${MODES.filter((m) => !m.game).map(modeTile).join('')}</div>
         <h3 class="group-title">Games</h3>
-        <div class="mode-grid">${MODES.filter((m) => m.game).map(modeTile).join('')}</div>`;
+        <div class="mode-grid four">${MODES.filter((m) => m.game).map(modeTile).join('')}</div>`;
     } else if (tab === 'cards') {
       body.innerHTML = `
         <div class="toolbar">
@@ -624,6 +625,7 @@
       const hist = R.store.history().filter((h) => h.deck === deck.id);
       const best = [
         ['Practice test', R.store.best(`test:${deck.id}`), (v) => `${v}%`],
+        ['Sprint', R.store.best(`sprint:${deck.id}`), (v) => `${v.toLocaleString()} pts`],
         ['Match', R.store.best(`match:${deck.id}`), (v) => R.fmtTime(v)],
         ['Comet Run', R.store.best(`comet:${deck.id}`), (v) => v.toLocaleString()],
         ['Lightning', R.store.best(`blitz:${deck.id}`), (v) => `${v} pts`],
@@ -649,7 +651,7 @@
     }
 
     function modeTile(m) {
-      return `<a class="mode-tile" href="#/deck/${deck.id}/${m.id}">
+      return `<a class="mode-tile" data-tilt="7" href="#/deck/${deck.id}/${m.id}">
         <div class="mode-ic">${R.icon(m.icon, 20)}</div>
         <div class="grow"><h3>${m.title}</h3><p>${m.desc}</p></div>
         ${R.icon('chevron', 18, 'mode-chev')}</a>`;

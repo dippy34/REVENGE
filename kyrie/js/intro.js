@@ -65,9 +65,10 @@
           <button class="btn btn-primary btn-pill" data-start>Get started</button>
           <a class="i-more" href="#how" data-scroll="how">See how it works ${I('chevron', 15)}</a>
         </div>
-        <div class="hero-stage reveal">
+        <div class="hero-stage reveal" data-hero><div class="stage3d">
           <div class="float float-a"><div class="float-ic grade">A</div><div><strong>Practice test</strong><span>94% · 47 of 50 correct</span></div></div>
           <div class="float float-b"><div class="float-ic">${I('flame', 18)}</div><div><strong>12-day streak</strong><span>Today's goal is done</span></div></div>
+          <div class="float float-c"><div class="float-ic deck">${I('cards', 18)}</div><div><strong>42 cards ready</strong><span>From Chapter 7.pdf</span></div></div>
           <div class="device">
             <div class="device-bar"><span class="dots"><i></i><i></i><i></i></span><span class="device-title">Biology · Flashcards</span><span></span></div>
             <div class="device-body">
@@ -79,7 +80,7 @@
               <div class="mini-rate"><span class="again">Again<small>1 min</small></span><span class="hard">Hard<small>12 hr</small></span><span class="good">Good<small>3 days</small></span><span class="easy">Easy<small>1 wk</small></span></div>
             </div>
           </div>
-        </div>
+        </div></div>
       </section>
 
       <section class="i-band white" id="how">
@@ -87,7 +88,7 @@
           <p class="i-kicker reveal">Upload</p>
           <h2 class="i-h2 reveal">Drop it in.<br>Kyrie does the rest.</h2>
           <p class="i-lead reveal">PDFs, Word documents, PowerPoint slides, photos of your notes, or anything you can paste. Kyrie finds the terms, definitions, dates and key ideas, and writes the cards for you.</p>
-          <div class="flow reveal">
+          <div class="flow reveal" data-tilt="3">
             <div class="flow-files">
               <div class="file-chip"><b class="pdf">PDF</b><span>Chapter 7 · The Cell.pdf</span></div>
               <div class="file-chip"><b class="ppt">PPT</b><span>Lecture 12 slides.pptx</span></div>
@@ -109,31 +110,31 @@
           <p class="i-kicker reveal">Study</p>
           <h2 class="i-h2 reveal">Six ways to learn it.<br>One place to keep it.</h2>
           <div class="bento">
-            <div class="btile tile-wide reveal">
+            <div class="btile tile-wide reveal" data-tilt="3">
               <div class="tile-text"><h3>Flashcards that know when you'll forget.</h3><p>Rate each card and Kyrie schedules the next review. Hard cards come back sooner. Easy ones wait.</p></div>
               <div class="timeline"><span><i></i>1 min</span><span><i></i>1 day</span><span><i></i>3 days</span><span><i></i>1 week</span><span><i></i>1 month</span></div>
             </div>
-            <div class="btile reveal">
+            <div class="btile reveal" data-tilt="6">
               <div class="tile-ic">${I('learn', 22)}</div>
               <h3>Learn</h3><p>Starts with multiple choice. Ends with you typing the answer from memory.</p>
             </div>
-            <div class="btile reveal">
-              <div class="score-mini"><strong>94%</strong><span>Grade A</span></div>
+            <div class="btile reveal" data-tilt="6">
+              <div class="score-mini"><strong data-count="94" data-suffix="%">94%</strong><span>Grade A</span></div>
               <h3>Practice tests</h3><p>Mixed questions, graded the moment you finish, with every answer explained.</p>
             </div>
-            <div class="btile tile-dark tile-wide reveal">
+            <div class="btile tile-dark tile-wide reveal" data-tilt="3">
               <div class="tile-text"><h3>Crash, then answer.</h3><p>In Comet Run, every crash is a question. Get it right and you keep flying.</p></div>
               ${cometArt}
             </div>
-            <div class="btile reveal">
+            <div class="btile reveal" data-tilt="6">
               <div class="tile-ic">${I('zap', 22)}</div>
               <h3>Match and Lightning</h3><p>Race the clock pairing terms, or survive 60 seconds of true or false.</p>
             </div>
-            <div class="btile reveal">
+            <div class="btile reveal" data-tilt="6">
               <div class="tile-ic">${I('shield', 22)}</div>
               <h3>Private by design</h3><p>No account. Your decks and progress stay on your device.</p>
             </div>
-            <div class="btile reveal">
+            <div class="btile reveal" data-tilt="6">
               <div class="tile-ic">${I('image', 22)}</div>
               <h3>Reads your handwriting</h3><p>With Claude as the card maker, even messy notes and photos become clean cards.</p>
             </div>
@@ -153,6 +154,7 @@
       </section>
 
       <section class="i-final">
+        <div class="reveal">${R.deck3d(['Term', 'Photosynthesis'], 'deck3d-lg')}</div>
         <h2 class="i-h2 reveal">Your next test<br>starts here.</h2>
         <button class="btn btn-primary btn-pill reveal" data-start>Get started</button>
         <p class="i-foot reveal">Free to use. No account needed.</p>
@@ -160,9 +162,13 @@
 
     const stopReveal = reveal(root);
     const stopFlip = autoFlip(R.$('[data-autoflip]', root));
+    const stopHero = R.hero3d(R.$('[data-hero]', root), R.$('.i-hero', root));
+    const stopCount = R.countUp(root);
     R.onLeave = () => {
       stopReveal();
       stopFlip();
+      stopHero();
+      stopCount();
     };
     R.$$('[data-start]', root).forEach((b) =>
       b.addEventListener('click', () => {

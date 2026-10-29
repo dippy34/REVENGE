@@ -13,7 +13,7 @@
     const params = Object.fromEntries(new URLSearchParams(qs || ''));
     let view = 'home';
     let m;
-    if ((m = path.match(/^\/deck\/([\w-]+)\/(flash|learn|test|match|comet|blitz|print)$/))) [params.id, view] = [m[1], m[2]];
+    if ((m = path.match(/^\/deck\/([\w-]+)\/(flash|learn|test|sprint|match|comet|blitz|print)$/))) [params.id, view] = [m[1], m[2]];
     else if ((m = path.match(/^\/deck\/([\w-]+)$/))) [params.id, view] = [m[1], 'deck'];
     else if ((m = path.match(/^\/(library|progress|settings|help|new|intro)$/))) view = m[1] === 'new' ? 'create' : m[1];
     // First visit: the intro instead of an empty home page.
@@ -45,6 +45,7 @@
     R.applyTheme();
     R.ai.check();
     R.bindGlobalDrop();
+    R.$('[data-year]').textContent = new Date().getFullYear();
     R.$('[data-nav-toggle]').addEventListener('click', () => setMenu(!document.body.classList.contains('menu-open')));
     // The bar gets its hairline once the page scrolls under it.
     const onScroll = () => document.body.classList.toggle('scrolled', window.scrollY > 4);
