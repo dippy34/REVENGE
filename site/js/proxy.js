@@ -17,7 +17,9 @@
    proxy/media/ (movies in the menu) runs this same file with no browser around the page: its
    <html data-site> names the one site it opens. The site loads behind a
    loading screen, is reloaded once as soon as it has loaded (the first load
-   through the proxy sometimes comes up broken), then takes the window. */
+   through the proxy sometimes comes up broken), then takes the window. It
+   stays on that site: a page anywhere else (an ad's redirect) is left at once
+   for the last page that was on it. */
 (function () {
   'use strict';
 
@@ -258,6 +260,7 @@
         rhTimer = setInterval(function () {
           if (iframe.hidden) return;
           var cur = rhCurrent();
+          stayHome(cur);
           if (cur && document.activeElement !== input && input.value !== cur) input.value = cur;
         }, 600);
       });
@@ -309,6 +312,7 @@
           new u.HttpCachePlugin(),
           new u.UrlWatcherPlugin(function (url) {
             url = String(url);
+            stayHome(url);
             if (document.activeElement === input || url === addr) return;
             showAddr(url);
             if (!root.classList.contains('p-loading')) loading(true, 1200);
@@ -365,6 +369,23 @@
       var d = iframe.contentDocument;
       return d && d.location.href !== 'about:blank' ? d : null;
     } catch (e) { return null; }
+  }
+
+  // The frame stays on the one site. Its ads can send the whole page to an ad (a
+  // "tab-under": in a normal browser the site moves to a new tab and the old tab
+  // shows the ad, but here there is only the one), which then loads forever. Any
+  // page off the site's own host is left at once for the last page that was on it.
+  var onlyHost = only ? new URL(only).hostname.replace(/^www\./, '') : '';
+  var lastHome = only, bouncedAt = 0;
+  function stayHome(url) {
+    if (!onlyHost || !/^https?:/i.test(url || '')) return;
+    var host = '';
+    try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return; }
+    if (host === onlyHost || host.slice(-onlyHost.length - 1) === '.' + onlyHost) { lastHome = url; return; }
+    if (Date.now() - bouncedAt < 3000) return; // one at a time, never a loop
+    bouncedAt = Date.now();
+    toast('skipped an ad');
+    engine.open(lastHome);
   }
 
   var firstDoc = null, seen = null, seenAt = 0, watchTimer = 0, giveUp = 0;

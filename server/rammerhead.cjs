@@ -151,6 +151,31 @@ const SRCSET_SPLIT = /function (\w+)\((\w+),(\w+)\)\{for\(var (\w+)=\[\],(\w+)=2
 if ((clientSrc.match(SRCSET_SPLIT) || []).length === 1) {
   clientSrc = clientSrc.replace(SRCSET_SPLIT, (m, fn, h, u) => srcsetFn(fn, h, u));
 }
+// Three more ways srcsets escape hammerhead, all common on React / Next.js sites (movy.sx
+// for one). React writes setAttribute('srcSet', ...): hammerhead proxies it but tests
+// `attr === 'srcset'`, so the whole list becomes ONE address. Lazy loaders write
+// img.srcset = ...: hammerhead wraps the src property but not srcset, so the relative URLs
+// resolve against our origin and 404. And <link rel=preload imagesrcset> is not a URL
+// attribute to it at all. After hammerhead starts (Rammerhead's start hook), srcset names
+// are lowercased on the way in, imagesrcset is proxied as a list, and the srcset /
+// imageSrcset properties go through setAttribute like everything else.
+const SRCSET_HOOKS = `
+;(window.rammerheadStartListeners=window.rammerheadStartListeners||[]).push(function(){
+var hh=window["%hammerhead%"],url=hh&&hh.utils&&hh.utils.url,E=window.Element&&window.Element.prototype;
+if(!E||!url||!url.getProxyUrl)return;
+var set=E.setAttribute,get=E.getAttribute;
+E.setAttribute=function(name,value){var n=String(name).toLowerCase();
+if(n==="srcset")return set.call(this,"srcset",value);
+if(n==="imagesrcset"&&this.tagName==="LINK")return set.call(this,"imagesrcset",url.getProxyUrl(String(value),{isUrlsSet:true}));
+return set.apply(this,arguments)};
+[[window.HTMLImageElement,"srcset"],[window.HTMLSourceElement,"srcset"],[window.HTMLLinkElement,"imageSrcset"]].forEach(function(p){
+var C=p[0],d=C&&Object.getOwnPropertyDescriptor(C.prototype,p[1]),attr=p[1].toLowerCase();
+if(!d||!d.configurable)return;
+Object.defineProperty(C.prototype,p[1],{configurable:true,enumerable:d.enumerable,
+get:function(){var v=get.call(this,attr);return v===null?"":v},
+set:function(v){E.setAttribute.call(this,attr,String(v))}})})});
+`;
+if (!clientSrc.includes('rammerheadStartListeners')) clientSrc += SRCSET_HOOKS;
 if (clientSrc !== original) {
   client.handler.content = Buffer.from(clientSrc);
   client.handler.etag = require('node:crypto').createHash('md5').update(client.handler.content).digest('hex');

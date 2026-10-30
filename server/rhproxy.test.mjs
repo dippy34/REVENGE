@@ -257,6 +257,11 @@ test('the real Rammerhead process: proxies a page, strips headers, writes no log
     'P(https://i.example/cdn-cgi/image/q=78,w=94/a.png:img) 1x, P(https://i.example/x,y.png:img) 2x');
   assert.equal(urlsSet(P, 'a.png 1x,b.png 2x'), 'P(a.png) 1x, P(b.png) 2x');
   assert.equal(urlsSet(P, 'a.png, data:image/png;base64,AA== 640w'), 'P(a.png), P(data:image/png;base64,AA==) 640w');
+  // ...and srcsets set from script reach hammerhead: React's setAttribute('srcSet'),
+  // lazy loaders' img.srcset = ..., and <link imagesrcset> (see SRCSET_HOOKS)
+  assert.match(hh.body, /rammerheadStartListeners/);
+  assert.match(hh.body, /n==="imagesrcset"&&this\.tagName==="LINK"/);
+  assert.match(hh.body, /\[window\.HTMLImageElement,"srcset"\]/);
   // Rammerhead's own 'disabled' log level logs everything; make sure it stays silent
   assert.equal(output, 0, 'rammerhead must write nothing to stdout/stderr');
 });

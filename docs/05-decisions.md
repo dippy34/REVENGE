@@ -191,6 +191,7 @@
 - **What:** `movies` in the menu's `other` list opens `/proxy/media/` (tab title `~/mv`): movy.sx through the proxy, with no address bar, buttons or quick links. On Kyrie it is `/notes/media/`, like the rest of the proxy; the folder is called `media` so neither address says movies.
 - **How:** the same `site/js/proxy.js` as the proxy page; `<html data-site>` names the one site. It lives under `/proxy/` because the service worker's scope is `/proxy/`.
 - **One reload:** the first load through the proxy sometimes comes up broken, so the site loads unseen behind the start screen, is reloaded once as soon as it has loaded (or after 5 s half-loaded), and shows when the reload is in. After 25 s it shows whatever it has.
+- **Ads:** the site's ads send the whole page to an ad (a "tab-under": normally the site moves to a new tab, here there is only the one) that then loads forever, about 25 s after a play page opens in safari mode. The page stays on the site's own host: anything else is left at once for the last page on it, with a "skipped an ad" note.
 - **Changing the site:** edit `data-site` in `site/proxy/media/index.html`.
 
 ### Music (2026-10-28, cut down 2026-10-29)
