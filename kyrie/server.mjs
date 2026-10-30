@@ -90,6 +90,31 @@ const RENAME = {
   vendor: 'reader',
 };
 
+// Kyrie's logo for the browser: the tab icon, /favicon.ico for browsers that look there
+// (Safari's bookmarks and history) and the home-screen icon. Served to everyone, so the
+// tab keeps Kyrie's logo behind the 631 door too: the site's pages get ICON_TAGS in
+// place of their own icon (app.mjs, iconTags). ?v= is the files' hash, so a changed
+// logo never meets a copy a browser cached.
+const ICON_FILES = {
+  '/kyrie-icon.svg': ['icon.svg', 'image/svg+xml'],
+  '/favicon.ico': ['favicon.png', 'image/png'],
+  '/apple-touch-icon.png': ['apple-touch-icon.png', 'image/png'],
+};
+const ICON_V = crypto.createHash('sha256')
+  .update(fs.readFileSync(path.join(ROOT, 'icon.svg')))
+  .update(fs.readFileSync(path.join(ROOT, 'apple-touch-icon.png')))
+  .digest('hex').slice(0, 10);
+const ICON_TAGS = `<link rel="icon" href="/kyrie-icon.svg?v=${ICON_V}" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=${ICON_V}">`;
+
+function icon(req, res, pathname) {
+  const [name, type] = ICON_FILES[pathname];
+  fs.readFile(path.join(ROOT, name), (err, data) => {
+    if (err) return send(res, 404, { error: 'not found' });
+    res.writeHead(200, { 'content-type': type, 'content-length': data.length, 'cache-control': 'public, max-age=86400', 'x-content-type-options': 'nosniff' });
+    res.end(req.method === 'HEAD' ? undefined : data);
+  });
+}
+
 let site = null;
 try {
   site = createApp({
@@ -101,6 +126,7 @@ try {
     },
     host: HOST,
     rename: RENAME,
+    iconTags: ICON_TAGS,
   });
 } catch (e) {
   console.log(`631 door off: ${e && e.message ? e.message : 'the site could not start'}`);
@@ -521,6 +547,7 @@ const server = http.createServer((req, res) => {
     return send(res, 400, { error: 'bad url' });
   }
   if (pathname === '/api/status' && req.method === 'GET') return send(res, 200, { ai: AI_ON, rev: process.env.KYRIE_REV || '' });
+  if ((req.method === 'GET' || req.method === 'HEAD') && ICON_FILES[pathname]) return icon(req, res, pathname);
   if (pathname === '/api/cards') {
     if (req.method !== 'POST') return send(res, 405, { error: 'POST only' }, { allow: 'POST' });
     return cards(req, res).catch(() => {

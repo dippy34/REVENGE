@@ -67,7 +67,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // real ones, and the site's own HTML, JS and CSS are rewritten on the way out
 // (site/ itself never changes). Old page names answer 404; old relay names keep
 // working because relayed game files point at them.
-export function createApp({ env = process.env, host = '127.0.0.1', rename = null } = {}) {
+// iconTags: optional HTML put in place of every page's own <link rel="icon"> (Kyrie
+// passes its logo, so the tab keeps it behind the door).
+export function createApp({ env = process.env, host = '127.0.0.1', rename = null, iconTags = '' } = {}) {
   const SITE = path.resolve(env.SITE_DIR || path.join(here, '..', 'site'));
   const KEY = env.ACCESS_KEY || '';
   const R2_BASE = env.R2_BASE || 'https://pub-31ddb721e92142be8b2deee228c36013.r2.dev';
@@ -199,13 +201,19 @@ addEventListener("fetch", (e) => {
     res.end(body);
   }
 
+  // a page with iconTags in place of its own icon (see createApp)
+  const withIcon = (html) => (iconTags ? html.replace(/<link rel="icon"[^>]*>/, iconTags) : html);
+
   function sendFile(req, res, file, extra) {
     fs.stat(file, (err, st) => {
       if (err || !st.isFile()) return notFound(req, res);
-      if (PATHS && file.startsWith(SITE + path.sep) && /\.(html|js|css)$/.test(file)) {
+      const page = file.endsWith('.html');
+      // pages are always checked again, so a change reaches people who visited before
+      if (page && !(extra && extra['cache-control'])) extra = Object.assign({ 'cache-control': 'no-cache' }, extra);
+      if ((PATHS || (iconTags && page)) && file.startsWith(SITE + path.sep) && /\.(html|js|css)$/.test(file)) {
         return fs.readFile(file, 'utf8', (err2, text) => {
           if (err2) return notFound(req, res);
-          const body = Buffer.from(outward(text));
+          const body = Buffer.from(page ? withIcon(outward(text)) : outward(text));
           send(res, 200, Object.assign({ 'content-type': TYPES[path.extname(file)], 'content-length': body.length }, extra), req.method === 'HEAD' ? '' : body);
         });
       }
@@ -223,8 +231,8 @@ addEventListener("fetch", (e) => {
   // otherwise plain text.
   function notFound(req, res) {
     let page = null;
-    try { page = outward(fs.readFileSync(path.join(SITE, '404.html'), 'utf8')); } catch (e) { /* no page */ }
-    if (page) return send(res, 404, Object.assign({ 'content-type': 'text/html; charset=utf-8' }, headersFor(rules, '/')), req.method === 'HEAD' ? '' : page);
+    try { page = withIcon(outward(fs.readFileSync(path.join(SITE, '404.html'), 'utf8'))); } catch (e) { /* no page */ }
+    if (page) return send(res, 404, Object.assign({ 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' }, headersFor(rules, '/')), req.method === 'HEAD' ? '' : page);
     send(res, 404, Object.assign({ 'content-type': 'text/plain; charset=utf-8' }, headersFor(rules, '/404')), 'not found');
   }
 

@@ -94,6 +94,10 @@ kyrie/
                    and the 631 site behind its door (../server/app.mjs, ../site)
   setup-native.sh  installs or updates Kyrie on the box (see above)
   autodeploy.sh    the box's own deploys, every 2 minutes once AUTODEPLOY=1 (see above)
+  icon.svg, favicon.png, apple-touch-icon.png
+                   Kyrie's logo: the tab icon (also on every page behind the door,
+                   with ?v= so a new logo beats any cached one), /favicon.ico and
+                   the home-screen icon
   js/quiz.js       builds questions (multiple choice, true/false, written) from cards
   js/ui.js         shared question card, settings, theme
   js/views.js      create flow, deck page, print
