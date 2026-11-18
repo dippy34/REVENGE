@@ -86,7 +86,9 @@
 
 ## Phase 3 - Settings panel
 - Tab cloak, `about:blank` launcher, panic key, plus the on-page note on what they do and do not hide.
-  - The CSP already allows `frame-src 'self'` and `frame-ancestors 'self'` for the launcher. Note: an `about:blank` window inherits the opener's CSP.
+  - The `about:blank` launcher is built (2026-11-17) as a row under other rather than a setting: `js/blank.js`. The CSP's `frame-src 'self'` and `frame-ancestors 'self'` (and `X-Frame-Options: SAMEORIGIN`) let it frame the site, because an `about:blank` window shares the opener's origin. It also inherits the opener's CSP, so the blank page is built with DOM calls and CSSOM styles only.
+  - Tested in Chrome and in WebKit with iPad portrait and landscape emulation: the tab is `about:blank` with no title, the frame fills the window and the site lays out at its width, and pages opened inside stay in the frame. Not tested on a real iPad.
+  - Fixed along the way: a click on a menu label in Chrome was dropped while the label was still scrambling from the hover (~0.4 s), because the scramble replaced the label's text node; `fx.scramble` now writes into the existing text node.
   - Set the cloak title and favicon in `js/early.js` so the real ones never flash.
 
 ## Phase 4 - Hardening + Leak check

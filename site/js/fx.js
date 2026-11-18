@@ -363,6 +363,15 @@
 
   /* ---------- text: scramble and decode ---------- */
 
+  // Writes into the element's one text node rather than replacing it: Chrome
+  // drops a click whose press landed on a text node that was swapped out
+  // before the release, so a label churning under the pointer ate clicks.
+  function setText(el, s) {
+    var n = el.firstChild;
+    if (n && n.nodeType === 3 && !n.nextSibling) { if (n.nodeValue !== s) n.nodeValue = s; }
+    else el.textContent = s;
+  }
+
   // Churns the text of `el` through random glyphs, then resolves it left to
   // right back to the original. The original is cached on first use, and
   // picked up again if something else changed the text since.
@@ -377,7 +386,7 @@
     if (el._raf) cancelAnimationFrame(el._raf);
     el._raf = 0;
     if (reduced()) {
-      el.textContent = final;
+      setText(el, final);
       el._shown = final;
       if (opts.done) opts.done();
       return;
@@ -405,7 +414,7 @@
           if (c === ' ' || t >= at[j]) out += c;
           else { out += pick(pool); done = false; }
         }
-        el.textContent = out;
+        setText(el, out);
         if (done) {
           el._raf = 0;
           el._shown = final;
