@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://i.ytimg.com; font-src 'self'; connect-src 'self'; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https://i.ytimg.com; font-src 'self'; connect-src 'self'; media-src 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; frame-src 'self' https://www.youtube-nocookie.com; child-src 'self' https://www.youtube-nocookie.com; form-action 'self'; base-uri 'none'">
 <meta name="color-scheme" content="dark">
 <title>~/ghost</title>
 <link rel="icon" href="../assets/mark.svg" type="image/svg+xml">
@@ -36,14 +36,17 @@
     <noscript><p class="gh-line">&gt; the ghost needs javascript to speak.</p></noscript>
   </section>
 
+  <div class="gh-pend" id="gh-pend" role="group" aria-label="images to send" hidden></div>
   <form class="gh-form" id="gh-form" autocomplete="off">
     <label class="gh-prompt" for="gh-in"><span aria-hidden="true">&gt;</span><span class="sr">message to the ghost</span></label>
     <textarea class="gh-in" id="gh-in" name="m" rows="1" maxlength="4000" placeholder="say something" enterkeyhint="send" spellcheck="true" disabled></textarea>
     <span class="gh-count" id="gh-count" aria-live="polite" hidden></span>
+    <input class="gh-file" id="gh-file" type="file" accept="image/*" multiple tabindex="-1" aria-hidden="true" hidden>
+    <button class="gh-attach" id="gh-attach" type="button" aria-label="attach images" data-cursor="attach" disabled><span aria-hidden="true">+img</span></button>
     <button class="gh-send" id="gh-send" type="submit" data-cursor="send" disabled><span id="gh-send-t">send</span></button>
   </form>
   <p class="gh-foot">
-    <span class="gh-keys" aria-hidden="true">enter send <i>/</i> shift+enter newline <i>/</i> up recall <i>/</i> /help</span>
+    <span class="gh-keys" aria-hidden="true">enter send <i>/</i> shift+enter newline <i>/</i> paste or drop images <i>/</i> up recall <i>/</i> /help</span>
     <span class="gh-honest">messages go to anthropic's api through this server. nothing is saved.</span>
   </p>
 </main>

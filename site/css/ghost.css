@@ -344,6 +344,82 @@ html[data-page="ghost"] #rain { opacity: .32; }
 .gh-in:disabled { opacity: .5; }
 .gh-count { flex: none; align-self: center; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
 
+/* images: +img in the prompt, the strip of ones waiting to go, and the
+   pictures inside your sent lines (grey here, like the rest of the site;
+   the ghost gets them in colour) */
+.gh-file { display: none; }
+.gh-attach {
+  flex: none;
+  min-height: 28px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--line-3);
+  border-radius: 0;
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+.gh-attach:hover,
+.gh-attach:focus-visible { color: var(--hi); border-color: var(--hi); }
+.gh-attach:disabled { opacity: .35; }
+.gh-form.is-drop { border-color: var(--hi); box-shadow: var(--glow-box); }
+.gh-form.is-drop .gh-attach { color: var(--hi); border-color: var(--hi); }
+
+.gh-pend {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 var(--col-r) 10px var(--col-l);
+}
+.gh-pend[hidden] { display: none; }
+.gh-thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--line-3);
+  background: #000;
+  animation: gh-in .3s var(--ease-out) backwards;
+}
+.gh-thumb img,
+.gh-shots img {
+  display: block;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.05);
+}
+.gh-thumb img { width: 100%; height: 100%; }
+.gh-thumb-x {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--hi);
+  background: var(--bg);
+  border: 1px solid var(--line-3);
+  border-radius: 0;
+}
+.gh-thumb-x:hover,
+.gh-thumb-x:focus-visible { border-color: var(--hi); }
+.gh-shots { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 8px; }
+.gh-shots img { width: 120px; height: 120px; border: 1px solid var(--line-2); }
+@media (pointer: coarse) {
+  /* finger-sized, and the same height side by side */
+  .gh-form .gh-attach,
+  .gh-form .gh-send { min-height: 40px; }
+  .gh-attach { padding: 4px 12px; }
+  .gh-thumb-x { width: 30px; height: 30px; line-height: 28px; }
+}
+@media (max-width: 520px) {
+  .gh-shots img { width: 88px; height: 88px; }
+}
+
 .gh-send {
   flex: none;
   min-width: 64px;

@@ -1,0 +1,17 @@
+/* cover.css: the cover page (cover/): one picture across the width, on the
+   light grey its bottom edge fades into. */
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #f6f6f6;
+}
+body { overflow: hidden; }
+.cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

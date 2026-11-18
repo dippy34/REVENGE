@@ -341,16 +341,31 @@ Re-run the same command to update to the latest `main`. Since 2026-10-19 this is
 how the Hetzner server `ubuntu-2gb-hel1-2` (157.180.67.116) runs the site, next to the older
 nova-hub services. The hostnames use the title digest, so the name is not in the URL.
 
+Day to day, a push to `main` is enough: Kyrie's deploy timer (`kyrie/autodeploy.sh`) merges it
+into `/opt/revenge` within about two minutes. Pages are read from disk, so they change at once.
+Since 2026-11-18 that deploy also restarts this site's service (`revenge`) when its server code,
+`site/_headers` or `/etc/revenge.env` changed, checks it answers again (a deploy that leaves it
+down is rolled back), and gives it Kyrie's Claude key if it has none. The command above is only
+needed for a new domain or a fresh box.
+
 **Live addresses:**
 - `https://631cb8a9.com` and `https://www.631cb8a9.com`: the domain, registered at IONOS
   with private registration on. DNS at IONOS has `A @` and `A www` set to `157.180.67.116`
   with TTL 5 min, and no `AAAA` records.
 - `https://631cb8a9.157-180-67-116.sslip.io`: a backup that needs no DNS.
+- `https://curiovale.com` and `https://www.curiovale.com`: the backup domain (2026-11-18), also at IONOS, with
+  `A @` and `A www` set to `157.180.67.116`.
+- IONOS puts a domain on registry "client hold" (it stops resolving everywhere) if the owner's email is not
+  confirmed within 15 days of registration. That happened to 631cb8a9.com on 2026-11-03. Confirm the email
+  the day a domain is bought.
 
 The current update command (no access key; saved settings are kept):
 ```sh
-DOMAIN='631cb8a9.com, www.631cb8a9.com, 631cb8a9.157-180-67-116.sslip.io' bash /opt/revenge/server/setup-native.sh
+DOMAIN='631cb8a9.com, www.631cb8a9.com, 631cb8a9.157-180-67-116.sslip.io, curiovale.com, www.curiovale.com' bash /opt/revenge/server/setup-native.sh
 ```
+Typed into the Hetzner web console, keys that need Shift can come out unshifted (`_` as `-`, `&&` as `77`);
+the command above needs none apart from capital letters. If its `git pull` stops with "Cannot fast-forward to
+multiple branches", run it again (Kyrie's deploy timer may have been fetching at the same moment).
 
 ## Local development
 
@@ -399,10 +414,11 @@ source still has to be offered to the people who use the proxy.
   - `AI_MODEL`: default `claude-haiku-5-5`.
   - `AI_DAILY_MAX`: default 300 requests a day for everyone.
   - Other limits are the `LIMITS` constant in `ai.mjs`.
+- **Images (2026-11-18):** a message can carry up to three pictures (+img, paste or drop on `/ghost/`). The page redraws each as a JPEG of at most 1568 px a side (which drops camera and place metadata) and sends it as base64; `validate()` checks the type against the file's first bytes, the size (`LIMITS.imageChars`) and the count (`LIMITS.images`, for the whole request), and passes them to Claude as image blocks before the text. Older pictures in a conversation become a note that one was there. The page's CSP allows `data:` images for the thumbnails.
 - **Where the key goes:**
-  - On the Hetzner box (native setup): add `ANTHROPIC_API_KEY=...` to `/etc/revenge.env` and restart the service.
+  - On the Hetzner box (native setup): `/etc/revenge.env`. Kyrie's deploys copy Kyrie's key there when it has none and restart the service.
   - With Docker: `server/.env`.
   - Locally: `server/.env`, which is gitignored.
 - **Cost:** Haiku 5.5 is $0.10 per million input tokens and $0.50 per million output tokens (prompts up to 100K tokens). Effort is low and replies are capped at 8192 tokens, so a typical exchange costs a small fraction of a cent. The daily cap bounds the total.
-- **Testing without a key:** `cd server && PORT=8097 AI_MOCK=1 node server.mjs`, then open `/ghost/`. Mock mode streams a canned reply and keeps every limit; `[[refuse]]`, `[[error]]`, `[[crowd]]` and `[[long]]` in a message trigger the error paths.
+- **Testing without a key:** `cd server && PORT=8097 AI_MOCK=1 node server.mjs`, then open `/ghost/`. Mock mode streams a canned reply (with pictures, it counts them) and keeps every limit; `[[refuse]]`, `[[error]]`, `[[crowd]]` and `[[long]]` in a message trigger the error paths.
 - **Tests:** `server/ai.test.mjs`, run by `npm run check`.

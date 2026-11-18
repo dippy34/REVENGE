@@ -4,7 +4,12 @@
    The conversation lives in this page's memory only (never in storage) and
    at most the last 20 messages are sent. Network text is rendered with
    textContent only. Uses window.fx when it is there (mask, glitch,
-   reduced motion) and works without it. */
+   reduced motion) and works without it.
+
+   Images (+img, paste or drop) are redrawn here into a JPEG of at most
+   1568 px a side before anything is sent, which also drops their metadata
+   (camera, place). The newest three go with each request; older ones are
+   remembered as a note that a picture was there. */
 (function () {
   'use strict';
 
@@ -18,11 +23,17 @@
   var stateEl = document.getElementById('gh-state');
   var stateT = document.getElementById('gh-state-t');
   var back = document.getElementById('gh-back');
+  var attachBtn = document.getElementById('gh-attach');
+  var fileIn = document.getElementById('gh-file');
+  var pendEl = document.getElementById('gh-pend');
   if (!log || !form || !input) return;
 
   var MAX_SEND = 20;     // messages per request
   var MAX_CHARS = 4000;  // per message
   var MAX_TOTAL = 24000; // per request
+  var MAX_IMGS = 3;      // per message, and per request (server/ai.mjs)
+  var MAX_SIDE = 1568;   // px, the long side of a sent image
+  var MAX_B64 = 1400000; // base64 characters per image (server/ai.mjs)
   var RAMP = '.:-=+*#';
 
   var mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -70,7 +81,8 @@
 
   /* ---------- state ---------- */
 
-  var convo = [];      // {role, content}, what the ghost remembers
+  var convo = [];      // {role, content, images?}, what the ghost remembers
+  var pending = [];    // {type, data, url}: images waiting to go with the next message
   var sent = [];       // the visitor's own lines, for up / down recall
   var recall = -1;
   var awake = false;
@@ -128,10 +140,19 @@
     return p;
   }
 
-  function youSaid(text) {
+  function youSaid(text, images) {
     var p = make('div', 'gh-msg is-you', log);
     make('span', 'gh-mark', p, '>').setAttribute('aria-hidden', 'true');
-    var body = make('div', 'gh-text', p, text);
+    var body = make('div', 'gh-text', p);
+    if (images && images.length) {
+      var shots = make('span', 'gh-shots', body);
+      for (var i = 0; i < images.length; i++) {
+        var im = make('img', '', shots);
+        im.alt = 'image ' + (i + 1) + ' of ' + images.length;
+        im.src = images[i].url;
+      }
+    }
+    if (text) body.appendChild(document.createTextNode(text));
     make('span', 'sr', p, ' (you)');
     follow(true);
     return { el: p, body: body };
@@ -316,6 +337,175 @@
     if (busy) stop(); else submit();
   });
 
+  /* ---------- images ---------- */
+
+  // Redraws an image file as a JPEG of at most MAX_SIDE px a side (white
+  // under any transparency), smaller and softer until it fits MAX_B64.
+  // done({type, data, url}) or done(null, why).
+  function shrink(file, done) {
+    var bad = "couldn't read that image.";
+    if (!/^image\//.test(file.type || '') && !/\.(jpe?g|png|gif|webp|heic|heif|avif|bmp)$/i.test(file.name || '')) {
+      done(null, 'only images can go to the ghost.');
+      return;
+    }
+    if (file.size > 40 * 1024 * 1024) { done(null, 'that image is too big.'); return; }
+    var fr = new FileReader();
+    fr.onerror = function () { done(null, bad); };
+    fr.onload = function () {
+      var img = new Image();
+      img.onerror = function () { done(null, bad); };
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight, side = MAX_SIDE, q = 0.86, out = '';
+        if (!w || !h) { done(null, bad); return; }
+        for (var tries = 0; tries < 5; tries++) {
+          var s = Math.min(1, side / Math.max(w, h));
+          var c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(w * s));
+          c.height = Math.max(1, Math.round(h * s));
+          var g = c.getContext('2d');
+          if (!g) break;
+          g.fillStyle = '#fff';
+          g.fillRect(0, 0, c.width, c.height);
+          g.drawImage(img, 0, 0, c.width, c.height);
+          try { out = c.toDataURL('image/jpeg', q); } catch (e) { out = ''; }
+          if (out && out.length - 23 <= MAX_B64) break;
+          side = Math.round(side * 0.8);
+          q = Math.max(0.6, q - 0.08);
+        }
+        var head = 'data:image/jpeg;base64,';
+        var data = out.indexOf(head) === 0 ? out.slice(head.length) : '';
+        if (!data || data.length > MAX_B64) { done(null, bad); return; }
+        done({ type: 'image/jpeg', data: data, url: out });
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+
+  function renderPending() {
+    if (!pendEl) return;
+    pendEl.textContent = '';
+    pendEl.hidden = !pending.length;
+    pending.forEach(function (p, i) {
+      var t = make('span', 'gh-thumb', pendEl);
+      var im = make('img', '', t);
+      im.alt = 'image ' + (i + 1) + ' to send';
+      im.src = p.url;
+      var x = make('button', 'gh-thumb-x', t, '×');
+      x.type = 'button';
+      x.setAttribute('aria-label', 'remove image ' + (i + 1));
+      x.setAttribute('data-cursor', 'remove');
+      x.addEventListener('click', function () {
+        pending.splice(pending.indexOf(p), 1);
+        renderPending();
+        input.focus({ preventScroll: true });
+      });
+    });
+    follow(false);
+  }
+
+  // files from the picker, a paste or a drop; one note for everything refused.
+  // They keep the order they were picked in, whichever is ready first.
+  var adding = 0, picked = 0;
+  function addFiles(list) {
+    var files = Array.prototype.slice.call(list || []);
+    if (!files.length) return;
+    if (input.disabled) return;
+    var room = MAX_IMGS - pending.length - adding;
+    if (room <= 0) { sys('at most ' + MAX_IMGS + ' images with one message.', 'is-dim'); return; }
+    if (files.length > room) {
+      sys(room === 1 ? 'only one more image fits with this message.' : 'only ' + room + ' more images fit with this message.', 'is-dim');
+      files = files.slice(0, room);
+    }
+    var why = '';
+    files.forEach(function (f) {
+      var n = picked++;
+      adding++;
+      shrink(f, function (img, reason) {
+        adding--;
+        if (img) {
+          img.n = n;
+          pending.push(img);
+          pending.sort(function (a, b) { return a.n - b.n; });
+          renderPending();
+        } else if (reason && reason !== why) {
+          why = reason;
+          sys(reason, 'is-dim');
+        }
+      });
+    });
+  }
+
+  function imagesOf(dt) {
+    var out = [];
+    if (!dt) return out;
+    var items = dt.items || [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && /^image\//.test(items[i].type)) {
+        var f = items[i].getAsFile();
+        if (f) out.push(f);
+      }
+    }
+    if (!out.length && dt.files) {
+      for (var j = 0; j < dt.files.length; j++) if (/^image\//.test(dt.files[j].type)) out.push(dt.files[j]);
+    }
+    return out;
+  }
+
+  if (attachBtn && fileIn) {
+    attachBtn.addEventListener('click', function () {
+      if (pending.length + adding >= MAX_IMGS) { sys('at most ' + MAX_IMGS + ' images with one message.', 'is-dim'); return; }
+      fileIn.value = '';
+      fileIn.click();
+    });
+    fileIn.addEventListener('change', function () {
+      addFiles(fileIn.files);
+      fileIn.value = '';
+      input.focus({ preventScroll: true });
+    });
+  }
+
+  // a pasted picture joins the message; pasted text still pastes as text
+  input.addEventListener('paste', function (e) {
+    var cd = e.clipboardData;
+    var files = imagesOf(cd);
+    if (!files.length) return;
+    var hasText = false;
+    try { hasText = !!cd.getData('text/plain'); } catch (err) { hasText = false; }
+    if (!hasText) e.preventDefault();
+    addFiles(files);
+  });
+
+  // dropping images anywhere on the page
+  var dragDepth = 0;
+  function dragsFiles(e) {
+    var types = e.dataTransfer && e.dataTransfer.types;
+    return !!types && Array.prototype.indexOf.call(types, 'Files') >= 0;
+  }
+  document.addEventListener('dragenter', function (e) {
+    if (!dragsFiles(e) || input.disabled) return;
+    dragDepth++;
+    form.classList.add('is-drop');
+  });
+  document.addEventListener('dragleave', function (e) {
+    if (!dragsFiles(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (!dragDepth) form.classList.remove('is-drop');
+  });
+  document.addEventListener('dragover', function (e) {
+    if (!dragsFiles(e) || input.disabled) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+  document.addEventListener('drop', function (e) {
+    if (!dragsFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    form.classList.remove('is-drop');
+    if (input.disabled) return;
+    addFiles(e.dataTransfer.files); // anything that is not an image gets a note
+  });
+
   function setBusy(on) {
     busy = on;
     sendT.textContent = on ? 'stop' : 'send';
@@ -383,6 +573,8 @@
     if (c === '/clear') {
       huntEv('ghost:clear');
       convo = [];
+      pending = [];
+      renderPending();
       log.textContent = '';
       sys('cleared. the ghost forgot everything.', 'is-dim');
       return;
@@ -402,6 +594,7 @@
       if (live) sys('/signal  <words>  send words to the signal, not the ghost');
       sys('esc      stop the ghost mid-sentence');
       sys('up/down  recall what you sent');
+      sys('+img     attach up to ' + MAX_IMGS + ' images (or paste / drop them)');
       var extra = live ? huntTell('ghostHelp') : null;
       if (typeof extra === 'string' && extra) sys(extra);
       return;
@@ -413,7 +606,9 @@
   /* ---------- talking ---------- */
 
   // the part of the conversation that is sent: at most 20 messages and
-  // 24000 characters, starting with one of yours
+  // 24000 characters, starting with one of yours. Only the newest MAX_IMGS
+  // images go along; an older message keeps a note where its picture was.
+  var GONE = '[an image was here; it is no longer attached]';
   function payload() {
     var list = convo.slice(-MAX_SEND);
     var total = 0, i;
@@ -422,7 +617,20 @@
       total -= list[0].content.length;
       list.shift();
     }
-    return { messages: list };
+    var left = MAX_IMGS, out = [];
+    for (i = list.length - 1; i >= 0; i--) {
+      var m = list[i], msg = { role: m.role, content: m.content };
+      var imgs = m.images || [];
+      if (imgs.length && imgs.length <= left) {
+        left -= imgs.length;
+        msg.images = imgs.map(function (x) { return { type: x.type, data: x.data }; });
+      } else if (imgs.length) {
+        left = 0;
+        msg.content = m.content ? m.content + '\n' + GONE : GONE;
+      }
+      out.unshift(msg);
+    }
+    return { messages: out };
   }
 
   function clip(s) {
@@ -437,24 +645,32 @@
       return;
     }
     var text = input.value.replace(/\s+$/, '');
-    if (!text.trim()) return;
-    input.value = '';
-    recall = -1;
-    grow();
+    if (adding) { sys('still reading the image...', 'is-dim'); return; }
+    var images = pending.slice();
+    if (!text.trim() && !images.length) return;
+    if (!text.trim()) text = '';
     // /signal is always a command (any length), so it never reaches the ghost
-    if (isSignal(text) || (text.charAt(0) === '/' && text.indexOf('\n') < 0 && text.length < 40)) {
+    if (!images.length && (isSignal(text) || (text.charAt(0) === '/' && text.indexOf('\n') < 0 && text.length < 40))) {
+      input.value = '';
+      recall = -1;
+      grow();
       sys(text.length > SIG_MAX ? text.slice(0, SIG_MAX) + ' ...' : text, 'is-cmd', '>');
       command(text);
       return;
     }
+    input.value = '';
+    recall = -1;
+    grow();
+    pending = [];
+    renderPending();
     huntEv('ghost:turn');
-    if (!sent.length || sent[sent.length - 1] !== text) sent.push(text);
+    if (text && (!sent.length || sent[sent.length - 1] !== text)) sent.push(text);
     if (sent.length > 50) sent.shift();
-    var mine = youSaid(text);
+    var mine = youSaid(text, images);
     if (!awake) {
       // maybe it woke up since the page loaded
       checkStatus(function (ok) {
-        if (ok) ask(text, mine);
+        if (ok) ask(text, mine, images);
         else {
           mine.el.classList.add('is-lost');
           glitch(sys('the ghost is asleep. it cannot hear you.', 'is-err', '!'));
@@ -462,7 +678,7 @@
       });
       return;
     }
-    ask(text, mine);
+    ask(text, mine, images);
   }
 
   function stop() {
@@ -471,9 +687,11 @@
     if (ctrl) ctrl.abort();
   }
 
-  function ask(text, mine) {
+  function ask(text, mine, images) {
     quiet();
-    convo.push({ role: 'user', content: text });
+    var me = { role: 'user', content: text };
+    if (images && images.length) me.images = images;
+    convo.push(me);
     setBusy(true);
     setState('thinking');
     stopped = false;
@@ -493,8 +711,7 @@
     // the ghost said nothing usable: forget your line too, so the
     // conversation still alternates
     function undo() {
-      var last = convo[convo.length - 1];
-      if (last && last.role === 'user' && last.content === text) convo.pop();
+      if (convo[convo.length - 1] === me) convo.pop();
     }
 
     function finish(result) {
@@ -696,6 +913,7 @@
         else sleeping(missing);
         input.disabled = false;
         sendBtn.disabled = false;
+        if (attachBtn) attachBtn.disabled = false;
         if (!('ontouchstart' in window)) input.focus({ preventScroll: true });
       }, Math.max(0, minWait - (Date.now() - t0)));
     });
@@ -898,5 +1116,6 @@
 
   input.disabled = true;
   sendBtn.disabled = true;
+  if (attachBtn) attachBtn.disabled = true;
   intro();
 })();

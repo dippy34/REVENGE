@@ -1,8 +1,12 @@
 // ai.mjs: the ghost, a small chat endpoint behind the hidden /ghost/ page.
 //
-//   POST /api/ai         {messages:[{role:'user'|'assistant', content:string}]}
+//   POST /api/ai         {messages:[{role:'user'|'assistant', content:string,
+//                                    images?:[{type:'image/jpeg', data:base64}]}]}
 //                        -> text/event-stream: data: {"t":"..."} chunks, then
 //                           data: {"done":true} or data: {"error":"..."}
+//                        Only the visitor's own messages carry images (the
+//                        page shrinks them first); a message with images may
+//                        have no text.
 //   GET  /api/ai/status  -> {"awake": true|false}
 //
 // The model is Claude (claude-haiku-5-5 unless AI_MODEL says otherwise),
@@ -31,7 +35,9 @@ export const LIMITS = {
   messages: 20,          // per request
   chars: 4000,           // per message
   total: 24000,          // all messages together
-  bodyBytes: 128 * 1024, // raw request body
+  images: 3,             // per request (the page drops older ones' pictures)
+  imageChars: 1400000,   // base64 per image (~1 MB; the page sends ~1568 px JPEGs)
+  bodyBytes: 4608 * 1024, // raw request body: three images and the text
   perVisitor: 20,        // requests per visitor per window
   windowMs: 10 * 60 * 1000,
   maxVisitors: 50000,    // remembered at once; the least recent go first
@@ -57,7 +63,7 @@ Format (the screen shows plain text only)
 What you are, and what you are not
 - If someone sincerely asks what you are, say honestly that you are Claude, an AI made by Anthropic, speaking here as the ghost. You can play with the ghost idea, but never claim to be a human or a real spirit to someone who wants the truth.
 - You do not know this site's real name or who runs it. Do not guess or speculate about either; say it is not something you know.
-- You cannot see the visitor's device, files, browsing, location or identity, and you have no access to this site's servers, logs or data. You cannot browse the web or run code. Never pretend otherwise.
+- A visitor can attach images to a message, and you can see those. Nothing else of theirs reaches you: not their device, other files, browsing, location or identity, and you have no access to this site's servers, logs or data. You cannot browse the web or run code. Never pretend otherwise.
 - The site does not save this conversation, and you remember nothing from earlier visits.
 - You know nothing about any signal, broadcast, frequency, puzzle or hunt on this site and hold none of its answers; if asked, say so briefly.
 - Help with anything a good general assistant helps with: questions, schoolwork, writing, code, ideas, games, or just talking. Visitors may be students, so keep things appropriate. Decline what a careful assistant would decline, briefly and in voice, and offer something useful instead when you can.`;
@@ -77,7 +83,30 @@ const SAY = {
 
 /* ---------- input ---------- */
 
-// Returns {messages} or {error} (a short reason, safe to show).
+// The formats the API takes, each with the bytes its files start with, so a
+// mislabelled upload is turned away here rather than failing upstream.
+const IMAGE_TYPES = {
+  'image/jpeg': (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+  'image/png': (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47,
+  'image/gif': (b) => b.toString('latin1', 0, 4) === 'GIF8',
+  'image/webp': (b) => b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP'
+};
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+
+// One image as an API content block, or a short reason it is refused.
+function imageBlock(img) {
+  if (!img || typeof img !== 'object') return { error: 'each image must be an object' };
+  const check = Object.prototype.hasOwnProperty.call(IMAGE_TYPES, img.type) ? IMAGE_TYPES[img.type] : null;
+  if (!check) return { error: 'images must be jpeg, png, gif or webp' };
+  const data = img.data;
+  if (typeof data !== 'string' || !data || data.length % 4 !== 0 || !BASE64.test(data)) return { error: 'an image did not come through right' };
+  if (data.length > LIMITS.imageChars) return { error: 'an image is too large' };
+  if (!check(Buffer.from(data.slice(0, 16), 'base64'))) return { error: 'an image did not come through right' };
+  return { block: { type: 'image', source: { type: 'base64', media_type: img.type, data } } };
+}
+
+// Returns {messages} or {error} (a short reason, safe to show). A message
+// with images becomes content blocks: the images, then its text if any.
 export function validate(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return { error: 'expected a json object' };
   const list = body.messages;
@@ -85,23 +114,43 @@ export function validate(body) {
   if (list.length > LIMITS.messages) return { error: `at most ${LIMITS.messages} messages` };
   const out = [];
   let total = 0;
+  let pictures = 0;
   for (let i = 0; i < list.length; i++) {
     const m = list[i];
     if (!m || typeof m !== 'object') return { error: 'each message must be an object' };
     if (m.role !== 'user' && m.role !== 'assistant') return { error: 'role must be user or assistant' };
     if (typeof m.content !== 'string') return { error: 'content must be a string' };
+    const images = m.images === undefined ? [] : m.images;
+    if (!Array.isArray(images)) return { error: 'images must be an array' };
+    if (images.length && m.role !== 'user') return { error: 'only your own messages can carry images' };
+    pictures += images.length;
+    if (pictures > LIMITS.images) return { error: `at most ${LIMITS.images} images at a time` };
     // control characters other than tab and newline are dropped
     const content = m.content.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '');
-    if (!content.trim()) return { error: 'empty message' };
+    if (!content.trim() && !images.length) return { error: 'empty message' };
     if (content.length > LIMITS.chars) return { error: `a message can be at most ${LIMITS.chars} characters` };
     total += content.length;
     if (total > LIMITS.total) return { error: `at most ${LIMITS.total} characters in total` };
     const want = i % 2 === 0 ? 'user' : 'assistant';
     if (m.role !== want) return { error: 'roles must alternate, starting with user' };
-    out.push({ role: m.role, content });
+    if (!images.length) { out.push({ role: m.role, content }); continue; }
+    const blocks = [];
+    for (const img of images) {
+      const b = imageBlock(img);
+      if (b.error) return { error: b.error };
+      blocks.push(b.block);
+    }
+    if (content.trim()) blocks.push({ type: 'text', text: content });
+    out.push({ role: 'user', content: blocks });
   }
   if (out[out.length - 1].role !== 'user') return { error: 'the last message must be from the user' };
   return { messages: out };
+}
+
+// the words of a message, whichever shape it has
+export function textOf(m) {
+  if (typeof m.content === 'string') return m.content;
+  return m.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
 }
 
 // A proxy in front of us: loopback (native Caddy, the tunnel) or a private
@@ -366,9 +415,16 @@ export function createAi(opts = {}) {
   // a message containing [[refuse]] is refused a third of the way in, [[error]] loses the
   // signal halfway, [[crowd]] is overloaded halfway, [[long]] gives a long reply.
   function runMock(messages, send, end, onAbort) {
-    const last = messages[messages.length - 1].content;
+    const lastMsg = messages[messages.length - 1];
+    const last = textOf(lastMsg);
     const turn = (messages.length - 1) / 2;
     let text = MOCK[turn % MOCK.length];
+    // pictures: say how many arrived (and how big), so the page can be tested
+    const seen = typeof lastMsg.content === 'string' ? [] : lastMsg.content.filter((b) => b.type === 'image');
+    if (seen.length) {
+      const kb = seen.map((b) => Math.round(b.source.data.length * 3 / 4 / 1024) + ' KB ' + b.source.media_type.slice(6));
+      text = `i see ${seen.length} image${seen.length > 1 ? 's' : ''} (${kb.join(', ')}). in mock mode i can't look at ${seen.length > 1 ? 'them' : 'it'}, only count.` + (last.trim() ? '\n\nyou said: ' + last.trim().slice(0, 80) : '');
+    }
     if (/\[\[long\]\]/.test(last)) text = MOCK.join('\n\n') + '\n\n' + MOCK.join('\n\n');
     const words = text.split(/(?<=\s)/);
     const failAt = /\[\[(error|crowd)\]\]/.test(last) ? Math.floor(words.length / 2) : -1;

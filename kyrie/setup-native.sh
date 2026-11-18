@@ -19,7 +19,9 @@
 # turns that off again. NO_PULL=1 (used by autodeploy.sh) skips the pull.
 # Re-run any time to update to the latest main. ANTHROPIC_API_KEY is only needed
 # the first time (it is saved in /etc/kyrie.env); without one, the site's own key
-# from /etc/revenge.env is used if it has one.
+# from /etc/revenge.env is used if it has one, and the other way round: the site
+# gets Kyrie's key when it has none. Each run also restarts the site's own service
+# (revenge) when its server code, headers or settings changed (see "> 631 site").
 set -euo pipefail
 
 DIR="${DIR:-/opt/revenge}"
@@ -136,6 +138,40 @@ else
   mkdir -p "$(dirname "$RHSTATE")"
   echo "$RHSUM" > "$RHSTATE"
   echo "  restarted: its code changed"
+fi
+
+echo "> 631 site"
+# The site's own service (revenge, set up by server/setup-native.sh: 631cb8a9.com,
+# curiovale.com and the rest) runs from this checkout too. Its pages are read from
+# disk, but its server code, its headers file (site/_headers) and its settings are
+# read once at start, so restart it when one of those changed. Its ghost (/ghost/)
+# takes Kyrie's Claude key when it has none of its own.
+SITEPORT="${SITEPORT:-8080}"
+siteup() { [ "$(curl -s -m 5 -o /dev/null -w '%{http_code}' "http://127.0.0.1:$SITEPORT/" || true)" = 200 ]; }
+if ! systemctl cat revenge >/dev/null 2>&1; then
+  echo "  not on this box"
+else
+  if [ -z "$(getvar ANTHROPIC_API_KEY "$SITEENV")" ] && [ -n "$(getvar ANTHROPIC_API_KEY "$ENVF")" ]; then
+    # append in place (keeps the file's owner and mode), on a line of its own
+    [ -s "$SITEENV" ] && [ -n "$(tail -c1 "$SITEENV")" ] && echo >> "$SITEENV"
+    printf 'ANTHROPIC_API_KEY=%s\n' "$(getvar ANTHROPIC_API_KEY "$ENVF")" >> "$SITEENV"
+    echo "  ghost: given Kyrie's Claude key"
+  fi
+  SITESUM="$( { find "$DIR/server" -name node_modules -prune -o -type f -name '*.mjs' -print | LC_ALL=C sort | xargs cat; \
+    cat "$DIR/server/package-lock.json" "$DIR/site/_headers" "$SITEENV"; } | sha256sum | cut -d' ' -f1)"
+  SITESTATE=/var/lib/kyrie-deploy/site.sum
+  if [ "$(cat "$SITESTATE" 2>/dev/null || true)" = "$SITESUM" ] && siteup; then
+    echo "  unchanged"
+  else
+    systemctl restart revenge
+    ok=0
+    for i in $(seq 1 30); do if siteup; then ok=1; break; fi; sleep 1; done
+    if [ "$ok" != 1 ]; then echo "  the site did not come back after a restart" >&2; exit 1; fi
+    mkdir -p "$(dirname "$SITESTATE")"
+    echo "$SITESUM" > "$SITESTATE"
+    echo "  restarted: its code or settings changed"
+  fi
+  [ -n "$(getvar ANTHROPIC_API_KEY "$SITEENV")" ] && echo "  ghost: awake" || echo "  ghost: asleep (no ANTHROPIC_API_KEY)"
 fi
 
 echo "> deploys"

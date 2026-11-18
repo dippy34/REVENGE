@@ -30,6 +30,7 @@ Honest framing: "no trace whatsoever" is not achievable. Hosts, registrars, and 
 
 ## Visitor-side tools (optional, in the settings panel)
 - **Tab cloak:** swap tab title and favicon to something generic.
+- **Cover (built 2026-11-18, curiovale.com only):** the first page a tab opens on curiovale.com goes to `cover/` first: one picture (`assets/cover.webp`) across the width for ten seconds, with the address bar already back on the page that was opened, then that page loads for real. Once per tab (sessionStorage), never inside a frame, never when storage is blocked (it would loop). The page on its way there is hidden and not counted. `js/early.js`, `js/cover.js`.
 - **`about:blank` launcher (built 2026-11-17, in the menu under other, `js/blank.js`):** opens a new tab whose address reads `about:blank`, holding only a full-window frame of the page it was opened from, on whatever domain that is (a backup domain, or Kyrie's behind its door). The first tab then goes to google.com, so no tab shows the address. Inside the frame the row reads "on" and opens nothing more. If pop-ups are blocked the row says so.
 - **Panic key:** a hotkey that redirects to a neutral page.
 - A plain note on the page: these only change what is visible on screen. They do not hide the visit from network monitoring, and private/incognito windows are the way to keep browser history clean.

@@ -4,9 +4,33 @@
    through one of our own transitions (so the power-on curtain is there
    from the very first frame), and which effects tier the page starts on
    (html[data-fx], so a weak device never paints the heavy version first).
-   Keep this file tiny. */
+   Keep this file tiny.
+
+   On curiovale.com the first page a tab opens goes to the cover first
+   (cover/: a picture for ten seconds, then back here; js/cover.js). Once
+   per tab (sessionStorage), never inside a frame (the about:blank tab's
+   frame comes from a tab that had it), and never when storage is blocked,
+   which could not remember it and would loop. This page hides itself
+   until the cover takes over, and hit.js does not count it. */
 (function () {
   'use strict';
+
+  if (/(^|\.)curiovale\.com$/i.test(location.hostname) && window.top === window) {
+    var fresh = false;
+    try {
+      if (sessionStorage.getItem('cover') !== '1') {
+        sessionStorage.setItem('cover', '1');
+        sessionStorage.setItem('cover.to', location.pathname + location.search + location.hash);
+        fresh = sessionStorage.getItem('cover') === '1';
+      }
+    } catch (e) { fresh = false; }
+    if (fresh) {
+      document.documentElement.className += ' to-cover';
+      document.documentElement.style.visibility = 'hidden';
+      location.replace('/cover/');
+      return;
+    }
+  }
 
   var root = document.documentElement;
   root.classList.add('js');

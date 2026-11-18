@@ -389,3 +389,84 @@ test('real SDK: the upstream stream is aborted when the browser leaves', async (
   assert.equal(ok, true, 'upstream connection should close');
   assert.ok(api.seen.length === 1);
 });
+
+/* ---------- images ---------- */
+
+const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(60, 7)]).toString('base64');
+const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40, 1)]).toString('base64');
+
+test('validate: images become content blocks, pictures first', () => {
+  const v = validate({ messages: [{ role: 'user', content: 'what is this?', images: [{ type: 'image/jpeg', data: JPEG }] }] });
+  assert.equal(v.error, undefined);
+  assert.deepEqual(v.messages[0].content, [
+    { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: JPEG } },
+    { type: 'text', text: 'what is this?' }
+  ]);
+  // a picture on its own is a message too
+  const only = validate({ messages: [{ role: 'user', content: '  ', images: [{ type: 'image/png', data: PNG }] }] });
+  assert.equal(only.error, undefined);
+  assert.deepEqual(only.messages[0].content.map((b) => b.type), ['image']);
+  // an empty images list changes nothing
+  assert.equal(validate({ messages: [{ role: 'user', content: 'hi', images: [] }] }).messages[0].content, 'hi');
+});
+
+test('validate: bad images are turned away', () => {
+  const one = (images, role = 'user') => validate({ messages: role === 'user'
+    ? [{ role: 'user', content: 'x', images }]
+    : [{ role: 'user', content: 'x' }, { role: 'assistant', content: 'y', images }, { role: 'user', content: 'z' }] }).error;
+  assert.match(one('nope'), /array/);
+  assert.match(one([{ type: 'image/bmp', data: JPEG }]), /jpeg, png, gif or webp/);
+  assert.match(one([{ type: 'image/png', data: JPEG }]), /did not come through/); // label and bytes disagree
+  assert.match(one([{ type: 'image/jpeg', data: 'not base64!' }]), /did not come through/);
+  assert.match(one([{ type: 'image/jpeg', data: JPEG.slice(0, -1) }]), /did not come through/);
+  assert.match(one([{ type: 'image/jpeg', data: 'A'.repeat(LIMITS.imageChars + 4) }]), /too large/);
+  assert.match(one([{ type: 'image/jpeg', data: JPEG }], 'assistant'), /only your own/);
+  assert.match(one([{ type: '__proto__', data: JPEG }]), /jpeg, png, gif or webp/);
+  const four = Array.from({ length: LIMITS.images + 1 }, () => ({ type: 'image/jpeg', data: JPEG }));
+  assert.match(one(four), new RegExp(`at most ${LIMITS.images} images`));
+  // the cap counts the whole conversation, not one message
+  const spread = validate({ messages: [
+    { role: 'user', content: 'a', images: [{ type: 'image/jpeg', data: JPEG }, { type: 'image/jpeg', data: JPEG }] },
+    { role: 'assistant', content: 'b' },
+    { role: 'user', content: 'c', images: [{ type: 'image/jpeg', data: JPEG }, { type: 'image/jpeg', data: JPEG }] }
+  ] });
+  assert.match(spread.error, /at most/);
+});
+
+test('mock: a picture is counted in the reply', async (t) => {
+  const { port } = await site(t, { mock: true });
+  const r = await request(port, { body: { messages: [{ role: 'user', content: 'look', images: [{ type: 'image/jpeg', data: JPEG }] }] } });
+  assert.equal(r.status, 200);
+  const said = r.events.filter((e) => typeof e.t === 'string').map((e) => e.t).join('');
+  assert.match(said, /^i see 1 image \(0 KB jpeg\)/);
+  assert.match(said, /you said: look/);
+  assert.deepEqual(r.events[r.events.length - 1], { done: true });
+});
+
+test('a body with three large pictures still fits; a bigger one is refused', async (t) => {
+  const { port } = await site(t, { mock: true });
+  const big = 'A'.repeat(LIMITS.imageChars - 20);
+  const jpegBig = JPEG.slice(0, 64) + big.slice(64);
+  const body = { messages: [{ role: 'user', content: 'three', images: [0, 1, 2].map(() => ({ type: 'image/jpeg', data: jpegBig })) }] };
+  assert.ok(JSON.stringify(body).length < LIMITS.bodyBytes);
+  const ok = await request(port, { body });
+  assert.equal(ok.status, 200);
+  const r = await request(port, { body: 'x'.repeat(LIMITS.bodyBytes + 10) });
+  assert.equal(r.status, 413);
+});
+
+test('real SDK: images reach the API as base64 image blocks', async (t) => {
+  const api = await fakeApi(t, (req, res) => sse(res, reply(['a cat.'], 'end_turn')));
+  const { port } = await site(t, { apiKey: 'sk-test', baseURL: api.url });
+  const r = await request(port, { body: { messages: [
+    { role: 'user', content: 'what is it?', images: [{ type: 'image/png', data: PNG }] }
+  ] } });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.events, [{ t: 'a cat.' }, { done: true }]);
+  const { body } = api.seen[0];
+  assert.deepEqual(body.messages, [{ role: 'user', content: [
+    { type: 'image', source: { type: 'base64', media_type: 'image/png', data: PNG } },
+    { type: 'text', text: 'what is it?' }
+  ] }]);
+  assert.match(body.system, /can attach images to a message, and you can see those/);
+});

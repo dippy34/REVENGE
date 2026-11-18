@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  // on its way to the cover (early.js): the real view is counted after it
+  if (/(^|\s)to-cover(\s|$)/.test(document.documentElement.className)) return;
+
   function send(d) {
     try {
       var body = JSON.stringify(d);
